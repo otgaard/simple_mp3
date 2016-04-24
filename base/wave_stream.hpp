@@ -2,13 +2,14 @@
 // Created by Darren Otgaar on 2016/01/31.
 //
 
-#ifndef SIMPLE_MP3_WAVE_STREAM_H
-#define SIMPLE_MP3_WAVE_STREAM_H
+#ifndef SIMPLE_MP3_WAVE_STREAM_HPP
+#define SIMPLE_MP3_WAVE_STREAM_HPP
 
 #include <cassert>
 #include <string>
 #include <fstream>
-#include "audio_stream.h"
+#include "audio_stream.hpp"
+#include "ring_buffer.hpp"
 
 struct WAVE {
     char chunk_id[4];
@@ -33,11 +34,15 @@ struct WAVE {
     }
 };
 
+constexpr size_t buffer_scale = 100;
+constexpr size_t buffer_fetch = 50;
+constexpr size_t buffer_update = 50;
+
 class wave_stream : public audio_stream<short> {
 public:
-    wave_stream(const std::string& filename, size_t frame_size, audio_stream<short>* parent) : filename_(filename),
-        frame_size_(frame_size), audio_stream<short>(parent) { buffer_.resize(8*frame_size_); }
-    virtual ~wave_stream() { }
+    wave_stream(const std::string& filename, size_t frame_size, audio_stream<short>* parent) : audio_stream<short>(parent),
+        filename_(filename), frame_size_(frame_size), buffer_(buffer_scale*frame_size_) { }
+    virtual ~wave_stream() { if(file_.is_open()) file_.close(); }
 
     bool is_open() const { return file_.is_open(); }
 
@@ -45,25 +50,23 @@ public:
 
     bool start() {
         file_ = std::ifstream(filename_, std::ios_base::binary | std::ios_base::in);
+
         if(file_.is_open()) {
-            read_offset_ = 0;
+            file_.seekg(0, std::ios::end);
+            file_length_ = file_.tellg();
+            file_.seekg(0, std::ios::beg);
             if(!read_header(header_) || !header_.is_valid()) {
                 file_.close();
                 return false;
             }
             return fill_buffer();
         }
-        return true;
+        return false;
     }
 
     virtual size_t read(buffer_t& buffer, size_t len) {
-        assert(buffer.size() >= len);
-        if(len != frame_size_) return 0;    // Must be aligned
-        auto l = std::min(len, buffer_end_ - read_offset_);
-        if(l == 0) { file_.close(); return 0; }
-        std::copy(buffer_.begin()+read_offset_, buffer_.begin()+read_offset_+l, buffer.begin());
-        read_offset_ += l;
-        if(read_offset_ == buffer_end_) fill_buffer();
+        auto l = buffer_.read(buffer.data(), len);
+        if(buffer_.size() < buffer_update*frame_size_) fill_buffer();
         return l;
     }
 
@@ -82,30 +85,25 @@ protected:
 
     bool fill_buffer() {
         if(file_.is_open() && !file_.eof()) {
-            auto s = file_.tellg();
-            // TODO: Fix final buffer handling.
-            file_.read(reinterpret_cast<char*>(buffer_.data()), 8*frame_size_*sizeof(short));
+            if(buffer_.remaining() < buffer_update*frame_size_) return false;
+            auto rd = std::min(size_t(file_length_ - file_.tellg()), buffer_fetch*frame_size_);
+            std::vector<short> arr(rd);
+            file_.read(reinterpret_cast<char*>(arr.data()), rd*sizeof(short));
+            buffer_.write(arr.data(), rd);
             auto e = file_.tellg();
-            if(e == -1) {
-                read_offset_ = buffer_end_ = 0;
-                return false;
-            }
-            buffer_end_ = (e - s)/sizeof(short);
-            read_offset_ = 0;
+            if(e == -1) file_.close();
             return true;
         }
-        read_offset_ = buffer_end_ = 0;
         return false;
     }
 
 private:
     std::string filename_;
+    size_t file_length_;
     size_t frame_size_;
-    std::vector<short> buffer_;
+    ring_buffer<short> buffer_;
     WAVE header_;
-    size_t read_offset_;
-    size_t buffer_end_;
     std::ifstream file_;
 };
 
-#endif //SIMPLE_MP3_WAVE_STREAM_H
+#endif //SIMPLE_MP3_WAVE_STREAM_HPP

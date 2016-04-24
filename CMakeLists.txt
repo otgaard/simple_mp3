@@ -16,11 +16,11 @@ elseif(WIN32)
 set(OPTIONAL_INCLUDES C://opt)
 endif(APPLE)
 
-set(SIMPLEMP3_FILES decoder/decoder.cpp decoder/decoder.h)
+set(SIMPLEMP3_FILES decoder/decoder.cpp decoder/decoder.hpp base/ring_buffer.hpp base/mp3_stream.hpp)
 add_library(simplemp3 ${SIMPLEMP3_FILES})
 target_include_directories(simplemp3 PUBLIC ${OPTIONAL_INCLUDES}/lame)
 
-set(SOURCE_FILES base/audio_stream.h main.cpp base/wave_stream.h log.hpp)
+set(SOURCE_FILES base/audio_stream.hpp main.cpp base/wave_stream.hpp log.hpp)
 add_executable(simple_mp3 ${SOURCE_FILES})
 target_include_directories(simple_mp3 PUBLIC ${OPTIONAL_INCLUDES}/lame)
 target_link_libraries(simple_mp3 ${OPTIONAL_INCLUDES}/lame/lib/libmp3lame.a portaudio simplemp3)

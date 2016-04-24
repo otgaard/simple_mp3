@@ -8,7 +8,9 @@
 #include <vector>
 #include <algorithm>
 #include <lame/lame.h>
+#include "../base/mp3_stream.hpp"
 
+/*
 using byte = unsigned char;
 
 struct mp3_format {
@@ -18,6 +20,7 @@ struct mp3_format {
     int total_frames;
     int duration;   // In seconds
 };
+*/
 
 template <typename T>
 class block_buffer {

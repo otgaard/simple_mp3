@@ -3,10 +3,11 @@
 #include <iostream>
 #include <numeric>
 #include <portaudio.h>
-#include "base/wave_stream.h"
-#include "decoder/decoder.h"
+#include "base/wave_stream.hpp"
+#include "decoder/decoder.hpp"
 
 #include "log.hpp"
+#include "base/mp3_stream.hpp"
 
 const char* filename = "/Users/otgaard/Development/prototypes/simple_mp3/output/assets/chembros.wav";
 const char* mp3file = "/Users/otgaard/Development/prototypes/simple_mp3/output/assets/aphextwins.mp3";
@@ -33,9 +34,9 @@ int mp3_callback(const void* input, void* output, u_long frame_count, const PaSt
                  PaStreamCallbackFlags status_flags, void* userdata) {
     //wave_stream* stream = static_cast<wave_stream*>(userdata);
     short* out = static_cast<short*>(output);
-    block_buffer<short>* buf_ptr = static_cast<block_buffer<short>*>(userdata);
-
-    auto len = buf_ptr->read(buffer.data(), buffer.size());
+    //block_buffer<short>* buf_ptr = static_cast<block_buffer<short>*>(userdata);
+    mp3_stream* stream = static_cast<mp3_stream*>(userdata);
+    auto len = stream->read(buffer, buffer.size());
     if(len == 0) { std::cerr << "Complete" << std::endl; return paComplete; }
     for(size_t i = 0; i != len; ++i) *out++ = buffer[i];
     return paContinue;
@@ -44,11 +45,14 @@ int mp3_callback(const void* input, void* output, u_long frame_count, const PaSt
 block_buffer<short> sample_buffer;
 
 int main(int argc, char*argv[]) {
+    /*
     decoder dec;
     dec.initialise();
     sample_buffer = dec.decode_file(mp3file2);
     dec.shutdown();
     LOG("returned from decode_file", sample_buffer.size());
+    */
+
     /*
     wave_stream wstream(filename, 1024, nullptr);
     wstream.start();
@@ -57,6 +61,14 @@ int main(int argc, char*argv[]) {
         return -1;
     }
     */
+
+    mp3_stream mstream(mp3file2, 1024, nullptr);
+    mstream.start();
+    if(!mstream.is_open()) {
+        LOG("Error opening mp3");
+        return -1;
+    }
+
     if(Pa_Initialize() != paNoError) {
         std::cerr << "Error initialising portaudio" << std::endl;
         return -1;
@@ -74,12 +86,12 @@ int main(int argc, char*argv[]) {
     PaError err = Pa_OpenDefaultStream(
             &stream,
             0,
-            1, //wstream.get_header().num_channels,
+            2, //wstream.get_header().num_channels,
             paInt16,
             44100, //wstream.get_header().sample_rate,
-            1024, //512,
+            512, //512,
             &mp3_callback,
-            &sample_buffer //&wstream
+            &mstream //&sample_buffer //&wstream
     );
 
     if(err != paNoError) {

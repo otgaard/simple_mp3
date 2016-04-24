@@ -4,7 +4,7 @@
 
 #include <fstream>
 #include "../log.hpp"
-#include "decoder.h"
+#include "decoder.hpp"
 #include <cassert>
 #include <lame/lame.h>
 
@@ -36,6 +36,14 @@ bool decoder::shutdown() {
     hip_ = nullptr;
     lame_close(lame_);
     lame_ = nullptr;
+}
+
+int zip(block_buffer<short>& buffer, short* left_pcm, short* right_pcm, int len) {
+    for(int i = 0; i != len; ++i) {
+        buffer.write(left_pcm+i, 1);
+        buffer.write(right_pcm+i, 1);
+    }
+    return len;
 }
 
 block_buffer<short> decoder::decode_file(const std::string& filename) {
@@ -81,11 +89,13 @@ block_buffer<short> decoder::decode_file(const std::string& filename) {
                 format_.channels = mp3data.stereo;
                 format_.total_frames = mp3data.totalframes;
                 format_.duration = mp3data.totalframes / format_.samplerate;
+                LOG("duration =", format_.duration);
                 header_parsed = true;
             }
         } else {
             ret = hip_decode1_headers(hip_, file_block, len, left_pcm, right_pcm, &mp3data);
-            sample_buffer.write(left_pcm, ret);
+            zip(sample_buffer, left_pcm, right_pcm, ret);
+            //sample_buffer.write(left_pcm, ret);
         }
     }
 
