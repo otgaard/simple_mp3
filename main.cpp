@@ -12,6 +12,7 @@
 const char* filename = "/Users/otgaard/Development/prototypes/simple_mp3/output/assets/chembros.wav";
 const char* mp3file = "/Users/otgaard/Development/prototypes/simple_mp3/output/assets/aphextwins.mp3";
 const char* mp3file2 = "/Users/otgaard/Development/prototypes/simple_mp3/output/assets/aphextwins2.mp3";
+const char* mp3file3 = "/Users/otgaard/Development/prototypes/simple_mp3/output/assets/opera.mp3";
 
 std::vector<short> buffer(1024);
 
@@ -62,7 +63,7 @@ int main(int argc, char*argv[]) {
     }
     */
 
-    mp3_stream mstream(mp3file2, 1024, nullptr);
+    mp3_stream mstream(mp3file3, 1024, nullptr);
     mstream.start();
     if(!mstream.is_open()) {
         LOG("Error opening mp3");

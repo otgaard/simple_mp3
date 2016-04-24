@@ -104,8 +104,11 @@ protected:
             auto rd = std::min(size_t(filelen_ - file_.tellg()), frame_size_);
             file_.read(reinterpret_cast<char*>(read_buf.data()), frame_size_);
             size_t off = file_.tellg();
-            if(off == -1) file_.close();
-            else          input_buffer_.write(read_buf.data(), rd);
+            if(off == -1) {
+                LOG("Closing file", input_buffer_.size(), output_buffer_.size());
+                file_.close();
+            }
+            else input_buffer_.write(read_buf.data(), rd);
         }
     }
 
@@ -122,7 +125,7 @@ protected:
 
     void fill_output_buffer() {
         int ret = 0, len = 0;
-        while(output_buffer_.size() < output_buffer_.capacity()/2 && input_buffer_.remaining() > 0) {
+        while(output_buffer_.size() < output_buffer_.capacity()/2 && input_buffer_.size() > 0) {
             len = input_buffer_.read(read_buf.data(), frame_size_);
             if(!header_parsed_) {
                 ret = hip_decode1_headers(hip_, read_buf.data(), len, left_pcm, right_pcm, &mp3data_);
@@ -133,6 +136,7 @@ protected:
             }
             fill_input_buffer();
         }
+        LOG(input_buffer_.size(), output_buffer_.size());
     }
 
     bool strip_header() {
