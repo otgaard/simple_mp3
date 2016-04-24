@@ -4,8 +4,14 @@
 #include <numeric>
 #include <portaudio.h>
 #include "base/wave_stream.h"
+#include "decoder/decoder.h"
 
-const char* filename = "/Users/otgaard/test3.wav";
+#include "log.hpp"
+
+const char* filename = "/Users/otgaard/Development/prototypes/simple_mp3/output/assets/chembros.wav";
+const char* mp3file = "/Users/otgaard/Development/prototypes/simple_mp3/output/assets/aphextwins.mp3";
+const char* mp3file2 = "/Users/otgaard/Development/prototypes/simple_mp3/output/assets/aphextwins2.mp3";
+
 std::vector<short> buffer(1024);
 
 typedef int callback(const void* input, void* output, u_long frame_count,
@@ -23,14 +29,34 @@ int wave_callback(const void* input, void* output, u_long frame_count, const PaS
     return paContinue;
 }
 
+int mp3_callback(const void* input, void* output, u_long frame_count, const PaStreamCallbackTimeInfo* time_info,
+                 PaStreamCallbackFlags status_flags, void* userdata) {
+    //wave_stream* stream = static_cast<wave_stream*>(userdata);
+    short* out = static_cast<short*>(output);
+    block_buffer<short>* buf_ptr = static_cast<block_buffer<short>*>(userdata);
+
+    auto len = buf_ptr->read(buffer.data(), buffer.size());
+    if(len == 0) { std::cerr << "Complete" << std::endl; return paComplete; }
+    for(size_t i = 0; i != len; ++i) *out++ = buffer[i];
+    return paContinue;
+}
+
+block_buffer<short> sample_buffer;
+
 int main(int argc, char*argv[]) {
+    decoder dec;
+    dec.initialise();
+    sample_buffer = dec.decode_file(mp3file2);
+    dec.shutdown();
+    LOG("returned from decode_file", sample_buffer.size());
+    /*
     wave_stream wstream(filename, 1024, nullptr);
     wstream.start();
     if(!wstream.is_open()) {
         std::cerr << "Error opening WAVE file." << std::endl;
         return -1;
     }
-
+    */
     if(Pa_Initialize() != paNoError) {
         std::cerr << "Error initialising portaudio" << std::endl;
         return -1;
@@ -48,12 +74,12 @@ int main(int argc, char*argv[]) {
     PaError err = Pa_OpenDefaultStream(
             &stream,
             0,
-            wstream.get_header().num_channels,
+            1, //wstream.get_header().num_channels,
             paInt16,
-            wstream.get_header().sample_rate,
-            512,
-            &wave_callback,
-            &wstream
+            44100, //wstream.get_header().sample_rate,
+            1024, //512,
+            &mp3_callback,
+            &sample_buffer //&wstream
     );
 
     if(err != paNoError) {
