@@ -58,6 +58,7 @@ public:
                 fill_output_buffer();
             }
         }
+        return true;
     }
 
     virtual size_t read(buffer_t& buffer, size_t len) {
@@ -91,7 +92,7 @@ protected:
         return true;
     }
 
-    bool shutdown() {
+    void shutdown() {
         hip_decode_exit(hip_);
         hip_ = nullptr;
         lame_close(lame_);

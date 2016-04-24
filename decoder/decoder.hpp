@@ -63,7 +63,7 @@ private:
 class decoder {
 public:
     bool initialise();
-    bool shutdown();
+    void shutdown();
 
     block_buffer<short> decode_file(const std::string& filename);
 

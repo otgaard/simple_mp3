@@ -31,7 +31,7 @@ bool decoder::initialise() {
     return true;
 }
 
-bool decoder::shutdown() {
+void decoder::shutdown() {
     hip_decode_exit(hip_);
     hip_ = nullptr;
     lame_close(lame_);
