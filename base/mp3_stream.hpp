@@ -129,7 +129,10 @@ protected:
             len = input_buffer_.read(read_buf.data(), frame_size_);
             if(!header_parsed_) {
                 ret = hip_decode1_headers(hip_, read_buf.data(), len, left_pcm, right_pcm, &mp3data_);
-                if(mp3data_.header_parsed) header_parsed_ = true;
+                if(mp3data_.header_parsed) {
+                    header_ = lame_2_header(mp3data_);
+                    header_parsed_ = true;
+                }
             } else {
                 ret = hip_decode1_headers(hip_, read_buf.data(), len, left_pcm, right_pcm, &mp3data_);
                 if(ret > 0) zip(left_pcm, right_pcm, ret);
@@ -187,6 +190,16 @@ protected:
         if((ptr[2] & 0x0C) == 0x0C) return false;
         if((ptr[1] & 0x18) == 0x18 && (ptr[1] & 0x06) == 0x04 && abl2[ptr[2] >> 4] & (1 << (ptr[3] >> 6))) return false;
         return (ptr[3] & 3) != 2;
+    }
+
+    static mp3_format lame_2_header(const mp3data_struct& mp3data) {
+        mp3_format fmt;
+        fmt.bitrate = mp3data.bitrate;
+        fmt.channels = mp3data.stereo;
+        fmt.samplerate = mp3data.samplerate;
+        fmt.duration = mp3data.totalframes / mp3data.samplerate;
+        fmt.total_frames = mp3data.totalframes;
+        return fmt;
     }
 
 private:
