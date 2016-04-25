@@ -8,17 +8,17 @@
 #include <iostream>
 
 template <typename T, typename... Args>
-void LOG(T arg, Args... args);
+void SM_LOG(T arg, Args... args);
 
 template <typename... Args>
-void LOG() {
+void SM_LOG() {
     std::cerr << std::endl;
 }
 
 template <typename T, typename... Args>
-void LOG(T t, Args... args) {
+void SM_LOG(T t, Args... args) {
     std::cerr << t << " ";
-    LOG(args...);
+    SM_LOG(args...);
 };
 
 #endif //SIMPLE_MP3_LOG_HPP

@@ -63,10 +63,10 @@ int main(int argc, char*argv[]) {
     }
     */
 
-    mp3_stream mstream(mp3file3, 1024, nullptr);
+    mp3_stream mstream(mp3file, 1024, nullptr);
     mstream.start();
     if(!mstream.is_open()) {
-        LOG("Error opening mp3");
+        SM_LOG("Error opening mp3");
         return -1;
     }
 

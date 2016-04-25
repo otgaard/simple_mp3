@@ -16,7 +16,7 @@ bool is_syncword_mp123(const byte* ptr);
 bool decoder::initialise() {
     lame_ = lame_init();
     if(!lame_) {
-        LOG("LAME failed to initialise");
+        SM_LOG("LAME failed to initialise");
         return false;
     }
 
@@ -25,7 +25,7 @@ bool decoder::initialise() {
 
     hip_ = hip_decode_init();
     if(!hip_) {
-        LOG("LAME HIP failed to initialise");
+        SM_LOG("LAME HIP failed to initialise");
         return false;
     }
     return true;
@@ -52,7 +52,7 @@ block_buffer<short> decoder::decode_file(const std::string& filename) {
 
     std::ifstream file;
     file.open(filename, std::ios_base::binary | std::ios_base::in);
-    if(!file.is_open()) { LOG("Error opening file"); return sample_buffer; }
+    if(!file.is_open()) { SM_LOG("Error opening file"); return sample_buffer; }
     file.seekg(0, std::ios_base::end);
     auto file_len = file.tellg();
     file.seekg(0, std::ios_base::beg);
@@ -62,12 +62,12 @@ block_buffer<short> decoder::decode_file(const std::string& filename) {
     file.close();
 
     file_contents.write(buffer.data(), file_len);
-    LOG("File Loaded, size =", file_contents.size()/(1000000.f), "MB");
+    SM_LOG("File Loaded, size =", file_contents.size() / (1000000.f), "MB");
 
     // First, we need to skip the id3 header and position the file on the start of the mp3 header stream.  We therefore
     // need to scan the file for the sync word.
 
-    LOG("STRIPPING HEADER: ", strip_header(file_contents));
+    SM_LOG("STRIPPING HEADER: ", strip_header(file_contents));
 
     byte file_block[1024];
     short left_pcm[1152], right_pcm[1152];
@@ -80,16 +80,16 @@ block_buffer<short> decoder::decode_file(const std::string& filename) {
         if(!header_parsed) {
             ret = hip_decode1_headers(hip_, file_block, len, left_pcm, right_pcm, &mp3data);
             if(mp3data.header_parsed == 1) {
-                LOG("Header Parsed", ret);
-                LOG("bitrate =", mp3data.bitrate);
-                LOG("channels =", mp3data.stereo);
-                LOG("samplerate =", mp3data.samplerate);
+                SM_LOG("Header Parsed", ret);
+                SM_LOG("bitrate =", mp3data.bitrate);
+                SM_LOG("channels =", mp3data.stereo);
+                SM_LOG("samplerate =", mp3data.samplerate);
                 format_.samplerate = mp3data.samplerate;
                 format_.bitrate = mp3data.bitrate;
                 format_.channels = mp3data.stereo;
                 format_.total_frames = mp3data.totalframes;
                 format_.duration = mp3data.totalframes / format_.samplerate;
-                LOG("duration =", format_.duration);
+                SM_LOG("duration =", format_.duration);
                 header_parsed = true;
             }
         } else {
@@ -108,7 +108,7 @@ bool strip_header(block_buffer<byte>& buffer) {
     if(buffer.read(header, 4) != 4) return false;
 
     if(memcmp(header, "ID3", 3) == 0) { // Check ID3 Header
-        LOG("ID3 found");
+        SM_LOG("ID3 found");
         // Read the length of the id3 header
         if(buffer.read(header, 6) != 6) return false;
         header[2] &= 0x7f; header[3] &= 0x7f; header[4] &= 0x7f; header[5] &= 0x7f;
@@ -118,7 +118,7 @@ bool strip_header(block_buffer<byte>& buffer) {
     }
 
     if(memcmp(header, "AiD\1", 4) == 0) { // Check for Album ID Header
-        LOG("Album ID found");
+        SM_LOG("Album ID found");
         if(buffer.read(header, 2) != 2) return false;
         size_t skip = (size_t)header[0] + 256 * (size_t)header[1];
         if(buffer.skip(skip - 6) != (skip - 6)) return false;
@@ -132,7 +132,7 @@ bool strip_header(block_buffer<byte>& buffer) {
         if(buffer.read(&dummy, 1) != 1) return false;
         skipped++;
         if(skipped >= 2048) {
-            LOG("Corrupted file, more than 2048 bytes skipped after headers and still no sync word");
+            SM_LOG("Corrupted file, more than 2048 bytes skipped after headers and still no sync word");
             return false;
         }
     }

@@ -50,7 +50,7 @@ public:
             // Load some data into the input buffer and try to strip the ID3 header
             if(!strip_header()) {
                 if(is_open()) file_.close();
-                LOG("Could not strip header");
+                SM_LOG("Could not strip header");
                 return false;
             }
 
@@ -77,7 +77,7 @@ protected:
     bool initialise() {
         lame_ = lame_init();
         if(!lame_) {
-            LOG("LAME failed to initialise");
+            SM_LOG("LAME failed to initialise");
             return false;
         }
 
@@ -86,7 +86,7 @@ protected:
 
         hip_ = hip_decode_init();
         if(!hip_) {
-            LOG("LAME HIP failed to initialise");
+            SM_LOG("LAME HIP failed to initialise");
             return false;
         }
         return true;
@@ -105,7 +105,7 @@ protected:
             file_.read(reinterpret_cast<char*>(read_buf.data()), frame_size_);
             size_t off = file_.tellg();
             if(off == -1) {
-                LOG("Closing file", input_buffer_.size(), output_buffer_.size());
+                SM_LOG("Closing file", input_buffer_.size(), output_buffer_.size());
                 file_.close();
             }
             else input_buffer_.write(read_buf.data(), rd);
@@ -136,7 +136,7 @@ protected:
             }
             fill_input_buffer();
         }
-        LOG(input_buffer_.size(), output_buffer_.size());
+        SM_LOG(input_buffer_.size(), output_buffer_.size());
     }
 
     bool strip_header() {
@@ -145,18 +145,18 @@ protected:
         if(input_buffer_.read(header, 4) != 4) return false;
 
         if(memcmp(header, "ID3", 3) == 0) { // Check ID3 Header
-            LOG("ID3 found");
+            SM_LOG("ID3 found");
             // Read the length of the id3 header
             if(input_buffer_.read(header, 6) != 6) return false;
             header[2] &= 0x7f; header[3] &= 0x7f; header[4] &= 0x7f; header[5] &= 0x7f;
             size_t skip = (((((header[2] << 7) + header[3]) << 7) + header[4] ) << 7) + header[5];
-            LOG("skipping =", skip);
+            SM_LOG("skipping =", skip);
             if(input_buffer_.skip(skip) != skip) return false;
             if(input_buffer_.read(header, 4) != 4) return false;   // Reposition buffer
         }
 
         if(memcmp(header, "AiD\1", 4) == 0) { // Check for Album ID Header
-            LOG("Album ID found");
+            SM_LOG("Album ID found");
             if(input_buffer_.read(header, 2) != 2) return false;
             size_t skip = (size_t)header[0] + 256 * (size_t)header[1];
             if(input_buffer_.skip(skip - 6) != (skip - 6)) return false;
@@ -170,7 +170,7 @@ protected:
             if(input_buffer_.read(&dummy, 1) != 1) return false;
             skipped++;
             if(skipped >= 2048) {
-                LOG("Corrupted file, more than 2048 bytes skipped after headers and still no sync word");
+                SM_LOG("Corrupted file, more than 2048 bytes skipped after headers and still no sync word");
                 return false;
             }
         }
