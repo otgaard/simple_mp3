@@ -27,7 +27,7 @@ constexpr size_t mp3_frame_size = 1152;
 class mp3_stream : public audio_stream<short> {
 public:
     mp3_stream(const std::string& filename, size_t frame_size, audio_stream<short>* parent) : filename_(filename),
-            header_parsed_(false), frame_size_(frame_size), output_buffer_(100*mp3_frame_size),
+            header_parsed_(false), processed_(0), frame_size_(frame_size), output_buffer_(100*mp3_frame_size),
             input_buffer_(100*frame_size) {
         read_buf.resize(frame_size);
     }
@@ -38,7 +38,7 @@ public:
 
     bool start() {
         initialise();
-        file_ = std::ifstream(filename_, std::ios_base::binary | std::ios_base::in);
+        file_ = std::ifstream(filename_, std::ios_base::in);
 
         if(file_.is_open()) {
             file_.seekg(0, std::ios::end);
@@ -103,9 +103,10 @@ protected:
         while(is_open() && (input_buffer_.size() < input_buffer_.capacity()/2)) {
             auto rd = std::min(size_t(filelen_ - file_.tellg()), frame_size_);
             file_.read(reinterpret_cast<char*>(read_buf.data()), frame_size_);
+            processed_ += rd;
             size_t off = file_.tellg();
             if(off == -1) {
-                SM_LOG("Closing file", input_buffer_.size(), output_buffer_.size());
+                SM_LOG("Closing file", filelen_, processed_);
                 file_.close();
             }
             else input_buffer_.write(read_buf.data(), rd);
@@ -136,10 +137,13 @@ protected:
             } else {
                 ret = hip_decode1_headers(hip_, read_buf.data(), len, left_pcm, right_pcm, &mp3data_);
                 if(ret > 0) zip(left_pcm, right_pcm, ret);
+                while(ret != 0) {
+                    ret = hip_decode1_headers(hip_, read_buf.data(), 0, left_pcm, right_pcm, &mp3data_);
+                    if(ret > 0) zip(left_pcm, right_pcm, ret);
+                }
             }
             fill_input_buffer();
         }
-        SM_LOG(input_buffer_.size(), output_buffer_.size());
     }
 
     bool strip_header() {
@@ -206,6 +210,7 @@ private:
     std::string filename_;
     bool header_parsed_;
     size_t filelen_;
+    size_t processed_;  // Debug var for mp3 drop-out
     size_t frame_size_;
     ring_buffer<short> output_buffer_;
     ring_buffer<byte> input_buffer_;
