@@ -28,19 +28,22 @@ class mp3_stream : public audio_stream<short> {
 public:
     mp3_stream(const std::string& filename, size_t frame_size, audio_stream<short>* parent) : filename_(filename),
             header_parsed_(false), file_size_(0), processed_(0), frame_size_(frame_size),
-            output_buffer_(100*mp3_frame_size), input_buffer_(100*frame_size) {
+            output_buffer_(100*mp3_frame_size), input_buffer_(100*frame_size), lame_(nullptr) {
         read_buf.resize(frame_size);
     }
-    virtual ~mp3_stream() { if(file_.is_open()) file_.close(); }
+    virtual ~mp3_stream() {
+        if(file_.is_open()) file_.close();
+        if(lame_) shutdown();
+    }
 
     bool is_open() const { return file_.is_open(); }
     const mp3_format& get_header() const { return header_; }
 
     bool start() {
-        initialise();
         file_ = std::ifstream(filename_, std::ios_base::binary | std::ios_base::in);
 
         if(file_.is_open()) {
+            initialise();
             file_.seekg(0, std::ios::end);
             file_size_ = file_.tellg();
             file_.seekg(0, std::ios::beg);
