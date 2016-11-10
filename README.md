@@ -6,3 +6,11 @@ base is in base/mp3_stream.hpp.  Note that the file decoder is very inefficient
 and decodes the whole file at once.  The mp3_stream is much better suited to being
 used in an actual application.
 
+# Build Instructions
+
+Build portaudio:
+
+cd portaudio
+mkdir build_
+cd build_
+cmake .. -DCMAKE_INSTALL_PREFIX=PATH:${SIMPLE_MP3_SOURCE_PATH}/third_party && make all install

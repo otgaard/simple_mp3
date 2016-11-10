@@ -1,26 +1,18 @@
 cmake_minimum_required(VERSION 3.3)
 project(simple_mp3)
 
-set(CMAKE_BUILD_TYPE "Debug")
+# Build and Install Portaudio in the third_party directory
+find_package(portaudio REQUIRED PATHS ${CMAKE_SOURCE_DIR}/third_party NO_DEFAULT_PATH)
+find_package(lame REQUIRED PATHS ${CMAKE_SOURCE_DIR}/third_party NO_DEFAULT_PATH)
 
-set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/output/bin)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/output/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/output/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/output/bin)
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-
-if(APPLE) # Should contain lame and portaudio
-set(OPTIONAL_INCLUDES /Users/otgaard/opt)
-elseif(WIN32)
-set(OPTIONAL_INCLUDES C://opt)
-endif(APPLE)
+set(CMAKE_CXX_STANDARD 14)
 
 set(SIMPLEMP3_FILES decoder/decoder.cpp decoder/decoder.hpp base/ring_buffer.hpp base/mp3_stream.hpp)
-add_library(simplemp3 ${SIMPLEMP3_FILES})
-target_include_directories(simplemp3 PUBLIC ${OPTIONAL_INCLUDES}/lame)
+add_library(simplemp3 SHARED ${SIMPLEMP3_FILES})
+target_include_directories(simplemp3 PUBLIC ${lame_INCLUDE_DIRS} ${portaudio_INCLUDE_DIRS})
+target_link_libraries(simplemp3 ${lame_LIBRARIES} ${portaudio_LIBRARIES})
 
 set(SOURCE_FILES base/audio_stream.hpp main.cpp base/wave_stream.hpp log.hpp)
 add_executable(simple_mp3 ${SOURCE_FILES})
-target_include_directories(simple_mp3 PUBLIC ${OPTIONAL_INCLUDES}/lame)
-target_link_libraries(simple_mp3 ${OPTIONAL_INCLUDES}/lame/lib/libmp3lame.a portaudio simplemp3)
+target_include_directories(simple_mp3 PUBLIC ${lame_INCLUDE_DIRS})
+target_link_libraries(simple_mp3 ${lame_LIBRARIES} ${portaudio_LIBRARIES} simplemp3)
