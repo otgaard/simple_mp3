@@ -8,9 +8,21 @@ used in an actual application.
 
 # Build Instructions
 
+(portaudio & LAME installed in third_party directory)
+
 Build portaudio:
 
 cd portaudio
 mkdir build_
 cd build_
 cmake .. -DCMAKE_INSTALL_PREFIX=PATH:${SIMPLE_MP3_SOURCE_PATH}/third_party && make all install
+
+Build LAME:
+
+cd lame
+./configure --prefix=${SIMPLE_MP3_SOURCE_PATH}/third_party/ && make all install
+
+
+
+Building simple_mp3
+
