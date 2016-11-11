@@ -19,7 +19,7 @@ mkdir build_
 
 cd build_
 
-cmake .. -DCMAKE_INSTALL_PREFIX=PATH:${SIMPLE_MP3_SOURCE_PATH}/third_party && make all install
+cmake .. -DCMAKE_INSTALL_PREFIX:PATH=${SIMPLE_MP3_SOURCE_PATH}/third_party && make all install
 
 Build LAME
 ----------
@@ -35,4 +35,4 @@ mkdir build
 
 cd build
 
-cmake .. -DCMAKE_INSTALL_PREFIX=PATH:${INSTALLATION_PATH} && make install
+cmake .. -DCMAKE_INSTALL_PREFIX:PATH=${INSTALLATION_PATH} && make install
