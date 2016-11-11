@@ -28,6 +28,16 @@ target_link_libraries(simple_mp3 zapAudio ${lame_LIBRARIES} ${portaudio_LIBRARIE
 install(TARGETS zapAudio DESTINATION lib)
 install(TARGETS simple_mp3 DESTINATION bin)
 
+foreach(library ${portaudio_LIBRARIES})
+    get_filename_component(path ${library} REALPATH)
+    install(FILES ${path} DESTINATION lib)
+endforeach()
+
+foreach(library ${lame_LIBRARIES})
+    get_filename_component(path ${library} REALPATH)
+    install(FILES ${path} DESTINATION lib)
+endforeach()
+
 foreach(file ${ZAPAUDIO_PUB_HEADERS})
     get_filename_component(dir ${file} DIRECTORY)
     install(FILES ${file} DESTINATION include/zapAudio/${dir})
