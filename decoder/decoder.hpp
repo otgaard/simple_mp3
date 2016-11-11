@@ -47,7 +47,7 @@ public:
 
     size_t skip(size_t len) {
         const size_t step = std::min(len, buffer_.size() - cursor_);
-        cursor_ += len;
+        cursor_ += step;
         return step;
     }
 
