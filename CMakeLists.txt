@@ -25,6 +25,11 @@ add_executable(simple_mp3 ${SOURCE_FILES})
 target_include_directories(simple_mp3 PUBLIC ${lame_INCLUDE_DIRS})
 target_link_libraries(simple_mp3 zapAudio ${lame_LIBRARIES} ${portaudio_LIBRARIES})
 
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+
 install(TARGETS zapAudio DESTINATION lib)
 install(TARGETS simple_mp3 DESTINATION bin)
 
@@ -42,3 +47,8 @@ foreach(file ${ZAPAUDIO_PUB_HEADERS})
     get_filename_component(dir ${file} DIRECTORY)
     install(FILES ${file} DESTINATION include/zapAudio/${dir})
 endforeach()
+
+list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
+if("${isSystemDir}" STREQUAL "-1")
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+endif("${isSystemDir}" STREQUAL "-1")
