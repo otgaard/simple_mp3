@@ -15,7 +15,12 @@ set(ZAPAUDIO_PUB_HEADERS
     base/wave_stream.hpp
 )
 
-set(ZAPAUDIO_FILES decoder/decoder.cpp log.hpp ${ZAPAUDIO_PUB_HEADERS})
+set(ZAPAUDIO_SOURCE
+    base/mp3_stream.cpp
+    decoder/decoder.cpp
+    log.hpp)
+
+set(ZAPAUDIO_FILES ${ZAPAUDIO_SOURCE} ${ZAPAUDIO_PUB_HEADERS})
 add_library(zapAudio SHARED ${ZAPAUDIO_FILES})
 target_include_directories(zapAudio PUBLIC ${lame_INCLUDE_DIRS} ${portaudio_INCLUDE_DIRS})
 target_link_libraries(zapAudio ${lame_LIBRARIES} ${portaudio_LIBRARIES})

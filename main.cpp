@@ -33,9 +33,7 @@ int wave_callback(const void* input, void* output, u_long frame_count, const PaS
 
 int mp3_callback(const void* input, void* output, u_long frame_count, const PaStreamCallbackTimeInfo* time_info,
                  PaStreamCallbackFlags status_flags, void* userdata) {
-    //wave_stream* stream = static_cast<wave_stream*>(userdata);
     short* out = static_cast<short*>(output);
-    //block_buffer<short>* buf_ptr = static_cast<block_buffer<short>*>(userdata);
     mp3_stream* stream = static_cast<mp3_stream*>(userdata);
     auto len = stream->read(buffer, buffer.size());
     if(len == 0) { std::cerr << "Complete" << std::endl; return paComplete; }
@@ -46,23 +44,6 @@ int mp3_callback(const void* input, void* output, u_long frame_count, const PaSt
 block_buffer<short> sample_buffer;
 
 int main(int argc, char*argv[]) {
-    /*
-    decoder dec;
-    dec.initialise();
-    sample_buffer = dec.decode_file(mp3file2);
-    dec.shutdown();
-    LOG("returned from decode_file", sample_buffer.size());
-    */
-
-    /*
-    wave_stream wstream(filename, 1024, nullptr);
-    wstream.start();
-    if(!wstream.is_open()) {
-        std::cerr << "Error opening WAVE file." << std::endl;
-        return -1;
-    }
-    */
-
     mp3_stream mstream(mp3file, 1024, nullptr);
     mstream.start();
     if(!mstream.is_open()) {
