@@ -2,8 +2,8 @@
 // Created by Darren Otgaar on 2016/04/24.
 //
 
-#ifndef SIMPLE_MP3_RING_BUFFER_HPP
-#define SIMPLE_MP3_RING_BUFFER_HPP
+#ifndef ZAPAUDIO_RING_BUFFER_HPP
+#define ZAPAUDIO_RING_BUFFER_HPP
 
 #include <vector>
 #include <numeric>
@@ -17,8 +17,11 @@ class ring_buffer {
 public:
     static_assert(std::is_trivially_constructible<T>::value && std::is_copy_constructible<T>::value,
                   "ring_buffer<> type requires trivial construction and copy construction");
+    ring_buffer() : mod_(0), read_(0), write_(0) { }
     ring_buffer(size_t mod) : mod_(mod), read_(0), write_(0), buffer_(mod) { }
     ~ring_buffer() = default;
+
+    void resize(size_t mod) { mod_ = mod; buffer_.resize(mod); clear(); }
 
     void clear() { read_ = write_ = 0; }
     bool is_empty() const { return read_ == write_; }
@@ -136,10 +139,10 @@ public:
     }
 
 private:
-    const size_t mod_;
+    size_t mod_;
     size_t read_;
     size_t write_;
     std::vector<T> buffer_;
 };
 
-#endif //SIMPLE_MP3_RING_BUFFER_HPP
+#endif //ZAPAUDIO_RING_BUFFER_HPP

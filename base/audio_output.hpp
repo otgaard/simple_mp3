@@ -11,6 +11,12 @@
 template <typename SampleT>
 class audio_output {
 public:
+    enum class audio_state {
+        AS_STOPPED,
+        AS_PLAYING,
+        AS_PAUSED
+    };
+
     using sample_t = SampleT;
     using buffer_t = std::vector<SampleT>;
     using stream_t = audio_stream<SampleT>;
@@ -29,13 +35,9 @@ public:
     bool is_paused() { return output_state_ == audio_state::AS_PAUSED; }
     bool is_stopped() { return output_state_ == audio_state::AS_STOPPED; }
 
-protected:
-    enum class audio_state {
-        AS_STOPPED,
-        AS_PLAYING,
-        AS_PAUSED
-    };
+    audio_state get_state() const { return output_state_; }
 
+protected:
     audio_state output_state_;
 
 private:
@@ -46,8 +48,5 @@ private:
 
 using audio_output_s16 = audio_output<short>;
 using audio_output_f32 = audio_output<float>;
-
-template <> class audio_output<short>;
-template <> class audio_output<float>;
 
 #endif //ZAPAUDIO_AUDIO_OUTPUT_HPP

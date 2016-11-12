@@ -13,11 +13,13 @@ set(ZAPAUDIO_PUB_HEADERS
     base/mp3_stream.hpp
     base/audio_stream.hpp
     base/wave_stream.hpp
+    base/audio_output.hpp
 )
 
 set(ZAPAUDIO_SOURCE
     base/mp3_stream.cpp
     decoder/decoder.cpp
+    base/audio_output.cpp
     log.hpp)
 
 set(ZAPAUDIO_FILES ${ZAPAUDIO_SOURCE} ${ZAPAUDIO_PUB_HEADERS})

@@ -103,5 +103,6 @@ int main(int argc, char*argv[]) {
 #include "base/audio_output.hpp"
 
 int main(int argc, char* argv[]) {
-
+    audio_output_s16 audio_dev;
+    audio_dev.play();
 }
