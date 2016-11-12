@@ -44,4 +44,10 @@ private:
     state_t& s;
 };
 
+using audio_output_s16 = audio_output<short>;
+using audio_output_f32 = audio_output<float>;
+
+template <> class audio_output<short>;
+template <> class audio_output<float>;
+
 #endif //ZAPAUDIO_AUDIO_OUTPUT_HPP

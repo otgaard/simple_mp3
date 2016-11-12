@@ -43,6 +43,7 @@ int mp3_callback(const void* input, void* output, u_long frame_count, const PaSt
 
 block_buffer<short> sample_buffer;
 
+/*
 int main(int argc, char*argv[]) {
     mp3_stream mstream(mp3file, 1024, nullptr);
     mstream.start();
@@ -96,4 +97,11 @@ int main(int argc, char*argv[]) {
     }
 
     return 0;
+}
+*/
+
+#include "base/audio_output.hpp"
+
+int main(int argc, char* argv[]) {
+
 }
