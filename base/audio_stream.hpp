@@ -14,7 +14,7 @@ public:
     using buffer_t = std::vector<SampleT>;
 
     audio_stream(audio_stream<SampleT>* parent=nullptr) : parent_(parent) { }
-    virtual ~audio_stream() { }
+    virtual ~audio_stream() = default;
 
     virtual size_t read(buffer_t& buffer, size_t len) = 0;
     virtual size_t write(const buffer_t& buffer, size_t len) = 0;

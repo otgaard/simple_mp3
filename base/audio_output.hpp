@@ -27,7 +27,7 @@ public:
     void set_stream(stream_t* stream_ptr);
     stream_t* get_stream() const;
 
-    void play();
+    bool play();
     void pause();
     void stop();
 
@@ -39,6 +39,8 @@ public:
 
 protected:
     audio_state output_state_;
+
+    static void audio_thread_fnc(audio_output* parent_ptr);
 
 private:
     struct state_t;
