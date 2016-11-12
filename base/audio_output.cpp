@@ -5,6 +5,7 @@
 #include "../log.hpp"
 #include "ring_buffer.hpp"
 #include "sine_wave.hpp"
+#include "mp3_stream.hpp"
 
 template <typename SampleT>
 struct audio_output<SampleT>::state_t {
@@ -24,6 +25,11 @@ int audio_output_callback_s16(const void* input, void* output, u_long frame_coun
 
     short* out = static_cast<short*>(output);
     stream_t* stream_ptr = static_cast<stream_t*>(userdata);
+
+    if(!stream_ptr) {
+        SM_LOG("Null stream passed. Aborting");
+        return paAbort;
+    }
 
     typename stream_t::buffer_t buffer(1024);
     auto len = stream_ptr->read(buffer, 1024);
@@ -77,6 +83,10 @@ void audio_output<SampleT>::audio_thread_fnc(audio_output* parent_ptr) {
 
     while(Pa_IsStreamActive(pa_stream) > 0) Pa_Sleep(1000);
 
+    SM_LOG("Finished");
+
+    parent_ptr->output_state_ = audio_state::AS_STOPPED;
+
     if(Pa_Terminate() != paNoError) {
         SM_LOG("Pa_Terminate error:", err, Pa_GetErrorText(err));
         return;
@@ -85,7 +95,10 @@ void audio_output<SampleT>::audio_thread_fnc(audio_output* parent_ptr) {
 
 template <typename SampleT>
 audio_output<SampleT>::audio_output() : output_state_(audio_state::AS_STOPPED), state_(new state_t()), s(*state_) {
-    s.stream_ptr = new sine_wave<SampleT>(440);
+    //s.stream_ptr = new sine_wave<SampleT>(440);
+    auto mp3 = new mp3_stream("/Users/otgaard/Development/prototypes/simple_mp3/output/assets/aphextwins.mp3", 1024, nullptr);
+    mp3->start();
+    s.stream_ptr = mp3;
 }
 
 template <typename SampleT>
@@ -94,6 +107,8 @@ audio_output<SampleT>::~audio_output() {
         SM_LOG("Warning: audio_output was not stopped");
         stop();
     }
+
+    s.audio_thread.join();
 }
 
 template <typename SampleT>
@@ -110,10 +125,7 @@ template <typename SampleT>
 bool audio_output<SampleT>::play() {
     SM_LOG("Starting audio_output");
 
-    size_t sample_buffer_size = 1024;
-
     s.audio_thread = std::move(std::thread(audio_output<SampleT>::audio_thread_fnc, this));
-
 
     output_state_ = audio_state::AS_PLAYING;
 }
@@ -133,4 +145,4 @@ void audio_output<SampleT>::stop() {
 }
 
 template class audio_output<short>;
-template class audio_output<float>;
+//template class audio_output<float>;

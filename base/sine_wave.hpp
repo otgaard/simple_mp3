@@ -37,9 +37,7 @@ class sine_wave : public audio_stream<SampleT> {
 public:
     sine_wave(size_t hertz, size_t sample_rate=44100, size_t channels=2, audio_stream<SampleT>* parent=nullptr)
             : audio_stream<SampleT>(parent), hertz_(hertz), sample_rate_(44100), channels_(channels), curr_sample_(0) {
-
         period_ = std::max(sample_rate / hertz, size_t(1));
-        SM_LOG("Period", period_);
     }
     virtual ~sine_wave() = default;
 
