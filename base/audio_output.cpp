@@ -8,10 +8,34 @@
 #include "mp3_stream.hpp"
 
 template <typename SampleT>
-struct audio_output<SampleT>::state_t {
-    std::thread audio_thread;
+struct data_type_table;
+
+template <> struct data_type_table<short> { enum { value = paInt16 }; };
+template <> struct data_type_table<float> { enum { value = paFloat32 }; };
+
+template <typename SampleT>
+struct audio_context {
+    using stream_t = typename audio_output<SampleT>::stream_t;
+    using buffer_t = typename stream_t::buffer_t;
+
+    size_t channels;
+    size_t sample_rate;
+    size_t frame_size;
+    size_t buffer_size;
+
     ring_buffer<SampleT> sample_buffer;
     stream_t* stream_ptr;
+    std::mutex context_mtx;
+    std::atomic<bool> shutdown;
+
+    audio_context() : stream_ptr(nullptr) { }
+};
+
+
+template <typename SampleT>
+struct audio_output<SampleT>::state_t {
+    std::thread audio_thread;
+    audio_context<SampleT> context;
 };
 
 typedef int callback(const void* input, void* output, u_long frame_count,
@@ -21,30 +45,37 @@ typedef int callback(const void* input, void* output, u_long frame_count,
 int audio_output_callback_s16(const void* input, void* output, u_long frame_count,
         const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags status_flags,
         void* userdata) {
-    using stream_t = audio_output_s16::stream_t;
-
     short* out = static_cast<short*>(output);
-    stream_t* stream_ptr = static_cast<stream_t*>(userdata);
+    using context = audio_context<short>;
+    context* context_ptr = static_cast<context*>(userdata);
 
-    if(!stream_ptr) {
-        SM_LOG("Null stream passed. Aborting");
+    if(!context_ptr || !context_ptr->stream_ptr) {
+        SM_LOG("Null context or stream passed. Aborting");
         return paAbort;
     }
 
-    typename stream_t::buffer_t buffer(1024);
-    auto len = stream_ptr->read(buffer, 1024);
-    if(len == 0) {
+    static typename context::buffer_t buffer(context_ptr->buffer_size);
+    auto len = context_ptr->stream_ptr->read(buffer, context_ptr->buffer_size);
+    if(len == 0 || context_ptr->shutdown) {
         SM_LOG("Complete");
         return paComplete;
     }
 
-    for(size_t i = 0; i != 1024; ++i) *out++ = buffer[i];
+    for(size_t i = 0; i != context_ptr->buffer_size; ++i) *out++ = buffer[i];
     return paContinue;
 }
 
 template <typename SampleT>
-void audio_output<SampleT>::audio_thread_fnc(audio_output* parent_ptr) {
-    SM_LOG("Starting");
+void audio_output<SampleT>::audio_thread_fnc(audio_output* parent_ptr, size_t channels, size_t sample_rate, size_t frame_size) {
+    SM_LOG("Starting", channels, sample_rate, frame_size);
+
+    auto context_ptr = &parent_ptr->s.context;
+
+    context_ptr->channels = channels;
+    context_ptr->sample_rate = sample_rate;
+    context_ptr->frame_size = frame_size/channels;
+    context_ptr->buffer_size = frame_size;
+
     if(Pa_Initialize() != paNoError) {
         SM_LOG("Error initialising portaudio");
         return;
@@ -61,12 +92,12 @@ void audio_output<SampleT>::audio_thread_fnc(audio_output* parent_ptr) {
     PaError err = Pa_OpenDefaultStream(
             &pa_stream,
             0,
-            2,
-            paInt16,
-            44100,
-            512,
+            channels,
+            data_type_table<SampleT>::value,
+            sample_rate,
+            frame_size/channels,
             &audio_output_callback_s16,
-            parent_ptr->s.stream_ptr
+            context_ptr
     );
 
     if(err != paNoError) {
@@ -98,7 +129,7 @@ audio_output<SampleT>::audio_output() : output_state_(audio_state::AS_STOPPED), 
     //s.stream_ptr = new sine_wave<SampleT>(440);
     auto mp3 = new mp3_stream("/Users/otgaard/Development/prototypes/simple_mp3/output/assets/aphextwins.mp3", 1024, nullptr);
     mp3->start();
-    s.stream_ptr = mp3;
+    s.context.stream_ptr = mp3;
 }
 
 template <typename SampleT>
@@ -107,25 +138,23 @@ audio_output<SampleT>::~audio_output() {
         SM_LOG("Warning: audio_output was not stopped");
         stop();
     }
-
-    s.audio_thread.join();
 }
 
 template <typename SampleT>
 void audio_output<SampleT>::set_stream(stream_t* stream_ptr) {
-    if(is_stopped()) s.stream_ptr = stream_ptr;
+    if(is_stopped()) s.context.stream_ptr = stream_ptr;
 }
 
 template <typename SampleT>
 typename audio_output<SampleT>::stream_t* audio_output<SampleT>::get_stream() const {
-    return s.stream_ptr;
+    return s.context.stream_ptr;
 }
 
 template <typename SampleT>
 bool audio_output<SampleT>::play() {
     SM_LOG("Starting audio_output");
 
-    s.audio_thread = std::move(std::thread(audio_output<SampleT>::audio_thread_fnc, this));
+    s.audio_thread = std::move(std::thread(audio_output<SampleT>::audio_thread_fnc, this, 2, 44100, 1024));
 
     output_state_ = audio_state::AS_PLAYING;
 }
@@ -140,6 +169,9 @@ void audio_output<SampleT>::pause() {
 template <typename SampleT>
 void audio_output<SampleT>::stop() {
     SM_LOG("Stopping audio_output");
+
+    s.context.shutdown = true;
+    s.audio_thread.join();
 
     output_state_ = audio_state::AS_STOPPED;
 }

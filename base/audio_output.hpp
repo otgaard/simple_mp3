@@ -40,7 +40,7 @@ public:
 protected:
     audio_state output_state_;
 
-    static void audio_thread_fnc(audio_output* parent_ptr);
+    static void audio_thread_fnc(audio_output* parent_ptr, size_t channels, size_t sample_rate, size_t frame_size);
 
 private:
     struct state_t;

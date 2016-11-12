@@ -106,7 +106,13 @@ int main(int argc, char*argv[]) {
 int main(int argc, char* argv[]) {
     audio_output_s16 audio_dev;
     audio_dev.play();
+    int counter = 0;
     while(audio_dev.is_playing()) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
+        counter++;
+
+        if(counter == 10) {
+            audio_dev.stop();
+        }
     }
 }
