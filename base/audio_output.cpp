@@ -13,9 +13,74 @@ struct audio_output<SampleT>::state_t {
     stream_t* stream_ptr;
 };
 
+typedef int callback(const void* input, void* output, u_long frame_count,
+    const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags status_flags,
+    void* userdata);
+
+int audio_output_callback_s16(const void* input, void* output, u_long frame_count,
+        const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags status_flags,
+        void* userdata) {
+    using stream_t = audio_output_s16::stream_t;
+
+    short* out = static_cast<short*>(output);
+    stream_t* stream_ptr = static_cast<stream_t*>(userdata);
+
+    typename stream_t::buffer_t buffer(1024);
+    auto len = stream_ptr->read(buffer, 1024);
+    if(len == 0) {
+        SM_LOG("Complete");
+        return paComplete;
+    }
+
+    for(size_t i = 0; i != 1024; ++i) *out++ = buffer[i];
+    return paContinue;
+}
+
 template <typename SampleT>
 void audio_output<SampleT>::audio_thread_fnc(audio_output* parent_ptr) {
+    SM_LOG("Starting");
+    if(Pa_Initialize() != paNoError) {
+        SM_LOG("Error initialising portaudio");
+        return;
+    }
 
+    PaStreamParameters output_parms;
+    output_parms.device = Pa_GetDefaultOutputDevice();
+    if(output_parms.device == paNoDevice) {
+        SM_LOG("Portaudio could not find a default playback device");
+        return;
+    }
+
+    PaStream* pa_stream;
+    PaError err = Pa_OpenDefaultStream(
+            &pa_stream,
+            0,
+            2,
+            paInt16,
+            44100,
+            512,
+            &audio_output_callback_s16,
+            parent_ptr->s.stream_ptr
+    );
+
+    if(err != paNoError) {
+        SM_LOG("Pa_OpenStream failed:", err, Pa_GetErrorText(err));
+        if(pa_stream) Pa_CloseStream(pa_stream);
+        return;
+    }
+
+    if(Pa_StartStream(pa_stream) != paNoError) {
+        SM_LOG("Pa_StartStream failed:", err, Pa_GetErrorText(err));
+        if(pa_stream) Pa_CloseStream(pa_stream);
+        return;
+    }
+
+    while(Pa_IsStreamActive(pa_stream) > 0) Pa_Sleep(1000);
+
+    if(Pa_Terminate() != paNoError) {
+        SM_LOG("Pa_Terminate error:", err, Pa_GetErrorText(err));
+        return;
+    }
 }
 
 template <typename SampleT>
@@ -45,6 +110,9 @@ template <typename SampleT>
 bool audio_output<SampleT>::play() {
     SM_LOG("Starting audio_output");
 
+    size_t sample_buffer_size = 1024;
+
+    s.audio_thread = std::move(std::thread(audio_output<SampleT>::audio_thread_fnc, this));
 
 
     output_state_ = audio_state::AS_PLAYING;

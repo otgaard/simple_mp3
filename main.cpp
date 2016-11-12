@@ -100,9 +100,13 @@ int main(int argc, char*argv[]) {
 }
 */
 
+#include <thread>
 #include "base/audio_output.hpp"
 
 int main(int argc, char* argv[]) {
     audio_output_s16 audio_dev;
     audio_dev.play();
+    while(audio_dev.is_playing()) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
 }
