@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
         counter++;
 
-        if(counter == 10) {
+        if(counter == 100) {
             audio_dev.stop();
         }
     }

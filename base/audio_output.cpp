@@ -55,13 +55,23 @@ int audio_output_callback_s16(const void* input, void* output, u_long frame_coun
     }
 
     static typename context::buffer_t buffer(context_ptr->buffer_size);
+    size_t len = 0;
+
+    {
+        std::lock_guard<std::mutex> lock(context_ptr->context_mtx);
+        len = context_ptr->sample_buffer.read(buffer.data(), context_ptr->buffer_size);
+    }
+
+    /* Read direct from stream
     auto len = context_ptr->stream_ptr->read(buffer, context_ptr->buffer_size);
+    */
+
     if(len == 0 || context_ptr->shutdown) {
         SM_LOG("Complete");
         return paComplete;
     }
 
-    for(size_t i = 0; i != context_ptr->buffer_size; ++i) *out++ = buffer[i];
+    for(size_t i = 0; i != len; ++i) *out++ = buffer[i];
     return paContinue;
 }
 
@@ -112,9 +122,32 @@ void audio_output<SampleT>::audio_thread_fnc(audio_output* parent_ptr, size_t ch
         return;
     }
 
-    while(Pa_IsStreamActive(pa_stream) > 0) Pa_Sleep(1000);
+    // Initialise the ring_buffer
 
-    SM_LOG("Finished");
+    // 44100 sample rate x 2 channels x 2 bytes per sample = 176400 bytes per second = 172 kB per second
+
+    auto& context = parent_ptr->s.context;
+    context.sample_buffer.resize(64*frame_size);                // 64 kB or almost 3 seconds
+    size_t cache_cur = 0;                                       // The cache cursor
+    typename stream_t::buffer_t sample_cache(32*frame_size);    // 32 kB temporary buffer (between stream & sample_buffer)
+
+    while(Pa_IsStreamActive(pa_stream) > 0) {
+        if(cache_cur == 0) {
+            // Refill the cache with samples from the stream, the stream may possibly block on I/O
+            cache_cur = context.stream_ptr->read(sample_cache, 32*frame_size);
+        }
+
+        // Check, every 60 milliseconds, if the ring_buffer needs refilling
+        {
+            std::lock_guard<std::mutex> lock(context.context_mtx);
+            if(context.sample_buffer.size() < context.sample_buffer.capacity()/2) { // If sample_buffer < 1/2
+                context.sample_buffer.write(sample_cache.data(), cache_cur);
+                cache_cur = 0;
+            }
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(60));
+    }
 
     parent_ptr->output_state_ = audio_state::AS_STOPPED;
 
