@@ -105,7 +105,7 @@ int main(int argc, char*argv[]) {
 
 int main(int argc, char* argv[]) {
     //s.stream_ptr = new sine_wave<SampleT>(440);
-    auto mp3 = new mp3_stream("/Users/otgaard/Development/prototypes/simple_mp3/output/assets/aphextwins.mp3", 2048, nullptr);
+    auto mp3 = new mp3_stream("/Users/otgaard/Development/prototypes/simple_mp3/output/assets/aphextwins.mp3", 1024, nullptr);
     mp3->start();
 
     audio_output_s16 audio_dev(mp3);

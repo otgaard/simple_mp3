@@ -183,10 +183,10 @@ typename audio_output<SampleT>::stream_t* audio_output<SampleT>::get_stream() co
 }
 
 template <typename SampleT>
-bool audio_output<SampleT>::play() {
+void audio_output<SampleT>::play() {
     SM_LOG("Starting audio_output");
 
-    s.audio_thread = std::move(std::thread(audio_output<SampleT>::audio_thread_fnc, this));
+    s.audio_thread = std::thread(audio_output<SampleT>::audio_thread_fnc, this);
 
     output_state_ = audio_state::AS_PLAYING;
 }

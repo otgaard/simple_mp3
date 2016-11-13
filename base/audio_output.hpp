@@ -21,13 +21,13 @@ public:
     using buffer_t = std::vector<SampleT>;
     using stream_t = audio_stream<SampleT>;
 
-    audio_output(stream_t* stream_ptr, size_t channels=2, size_t sample_rate=44100, size_t frame_size=2048);
+    audio_output(stream_t* stream_ptr, size_t channels=2, size_t sample_rate=44100, size_t frame_size=1024);
     ~audio_output();
 
     void set_stream(stream_t* stream_ptr);
     stream_t* get_stream() const;
 
-    bool play();
+    void play();
     void pause();
     void stop();
 

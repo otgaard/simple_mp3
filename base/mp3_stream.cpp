@@ -1,5 +1,6 @@
 #include "mp3_stream.hpp"
 #include <lame/lame.h>
+#include "../log.hpp"
 
 mp3_format lame_2_header(const mp3data_struct& mp3data);
 

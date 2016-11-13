@@ -7,7 +7,6 @@
 
 #include "audio_stream.hpp"
 #include "ring_buffer.hpp"
-#include "../log.hpp"
 #include <fstream>
 #include <cassert>
 
