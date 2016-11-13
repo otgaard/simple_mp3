@@ -104,15 +104,15 @@ int main(int argc, char*argv[]) {
 #include "base/audio_output.hpp"
 
 int main(int argc, char* argv[]) {
-    audio_output_s16 audio_dev;
+    //s.stream_ptr = new sine_wave<SampleT>(440);
+    auto mp3 = new mp3_stream("/Users/otgaard/Development/prototypes/simple_mp3/output/assets/aphextwins.mp3", 2048, nullptr);
+    mp3->start();
+
+    audio_output_s16 audio_dev(mp3);
     audio_dev.play();
     int counter = 0;
     while(audio_dev.is_playing()) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
         counter++;
-
-        if(counter == 100) {
-            audio_dev.stop();
-        }
     }
 }

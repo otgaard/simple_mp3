@@ -20,7 +20,7 @@ struct audio_context {
 
     size_t channels;
     size_t sample_rate;
-    size_t frame_size;
+    size_t channel_frame_size;
     size_t buffer_size;
 
     ring_buffer<SampleT> sample_buffer;
@@ -49,8 +49,8 @@ int audio_output_callback_s16(const void* input, void* output, u_long frame_coun
     using context = audio_context<short>;
     context* context_ptr = static_cast<context*>(userdata);
 
-    if(!context_ptr || !context_ptr->stream_ptr) {
-        SM_LOG("Null context or stream passed. Aborting");
+    if(!context_ptr) {
+        SM_LOG("Null context passed. Aborting");
         return paAbort;
     }
 
@@ -62,10 +62,6 @@ int audio_output_callback_s16(const void* input, void* output, u_long frame_coun
         len = context_ptr->sample_buffer.read(buffer.data(), context_ptr->buffer_size);
     }
 
-    /* Read direct from stream
-    auto len = context_ptr->stream_ptr->read(buffer, context_ptr->buffer_size);
-    */
-
     if(len == 0 || context_ptr->shutdown) {
         SM_LOG("Complete");
         return paComplete;
@@ -76,15 +72,15 @@ int audio_output_callback_s16(const void* input, void* output, u_long frame_coun
 }
 
 template <typename SampleT>
-void audio_output<SampleT>::audio_thread_fnc(audio_output* parent_ptr, size_t channels, size_t sample_rate, size_t frame_size) {
-    SM_LOG("Starting", channels, sample_rate, frame_size);
+void audio_output<SampleT>::audio_thread_fnc(audio_output* parent_ptr) {
+    SM_LOG("Starting", parent_ptr->channels(), parent_ptr->sample_rate(), parent_ptr->frame_size());
 
     auto context_ptr = &parent_ptr->s.context;
 
-    context_ptr->channels = channels;
-    context_ptr->sample_rate = sample_rate;
-    context_ptr->frame_size = frame_size/channels;
-    context_ptr->buffer_size = frame_size;
+    context_ptr->channels = parent_ptr->channels();
+    context_ptr->sample_rate = parent_ptr->sample_rate();
+    context_ptr->channel_frame_size = parent_ptr->frame_size()/parent_ptr->channels();
+    context_ptr->buffer_size = parent_ptr->frame_size();
 
     if(Pa_Initialize() != paNoError) {
         SM_LOG("Error initialising portaudio");
@@ -102,10 +98,10 @@ void audio_output<SampleT>::audio_thread_fnc(audio_output* parent_ptr, size_t ch
     PaError err = Pa_OpenDefaultStream(
             &pa_stream,
             0,
-            channels,
+            int(parent_ptr->channels()),
             data_type_table<SampleT>::value,
-            sample_rate,
-            frame_size/channels,
+            parent_ptr->sample_rate(),
+            context_ptr->channel_frame_size,
             &audio_output_callback_s16,
             context_ptr
     );
@@ -126,18 +122,22 @@ void audio_output<SampleT>::audio_thread_fnc(audio_output* parent_ptr, size_t ch
 
     // 44100 sample rate x 2 channels x 2 bytes per sample = 176400 bytes per second = 172 kB per second
 
+    const size_t buf_size = 64*parent_ptr->frame_size();
+    const size_t hbuf_size = buf_size / 2;
+    const auto scan_ms = std::chrono::milliseconds(60);
+
     auto& context = parent_ptr->s.context;
-    context.sample_buffer.resize(64*frame_size);                // 64 kB or almost 3 seconds
-    size_t cache_cur = 0;                                       // The cache cursor
-    typename stream_t::buffer_t sample_cache(32*frame_size);    // 32 kB temporary buffer (between stream & sample_buffer)
+    size_t cache_cur = 0;                                   // The cache cursor
+    context.sample_buffer.resize(buf_size);                 // 64 kB
+    typename stream_t::buffer_t sample_cache(hbuf_size);    // 32 kB
 
     while(Pa_IsStreamActive(pa_stream) > 0) {
         if(cache_cur == 0) {
             // Refill the cache with samples from the stream, the stream may possibly block on I/O
-            cache_cur = context.stream_ptr->read(sample_cache, 32*frame_size);
+            cache_cur = context.stream_ptr->read(sample_cache, hbuf_size);
         }
 
-        // Check, every 60 milliseconds, if the ring_buffer needs refilling
+        // Check, every 60 milliseconds, if the sample_buffer needs refilling
         {
             std::lock_guard<std::mutex> lock(context.context_mtx);
             if(context.sample_buffer.size() < context.sample_buffer.capacity()/2) { // If sample_buffer < 1/2
@@ -146,7 +146,7 @@ void audio_output<SampleT>::audio_thread_fnc(audio_output* parent_ptr, size_t ch
             }
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(60));
+        std::this_thread::sleep_for(scan_ms);
     }
 
     parent_ptr->output_state_ = audio_state::AS_STOPPED;
@@ -158,11 +158,10 @@ void audio_output<SampleT>::audio_thread_fnc(audio_output* parent_ptr, size_t ch
 }
 
 template <typename SampleT>
-audio_output<SampleT>::audio_output() : output_state_(audio_state::AS_STOPPED), state_(new state_t()), s(*state_) {
-    //s.stream_ptr = new sine_wave<SampleT>(440);
-    auto mp3 = new mp3_stream("/Users/otgaard/Development/prototypes/simple_mp3/output/assets/aphextwins.mp3", 1024, nullptr);
-    mp3->start();
-    s.context.stream_ptr = mp3;
+audio_output<SampleT>::audio_output(stream_t* stream_ptr, size_t channels, size_t sample_rate, size_t frame_size)
+        : output_state_(audio_state::AS_STOPPED), channels_(channels), sample_rate_(sample_rate),
+          frame_size_(frame_size), state_(new state_t()), s(*state_) {
+    state_->context.stream_ptr = stream_ptr;
 }
 
 template <typename SampleT>
@@ -187,7 +186,7 @@ template <typename SampleT>
 bool audio_output<SampleT>::play() {
     SM_LOG("Starting audio_output");
 
-    s.audio_thread = std::move(std::thread(audio_output<SampleT>::audio_thread_fnc, this, 2, 44100, 1024));
+    s.audio_thread = std::move(std::thread(audio_output<SampleT>::audio_thread_fnc, this));
 
     output_state_ = audio_state::AS_PLAYING;
 }

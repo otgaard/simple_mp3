@@ -21,7 +21,7 @@ public:
     using buffer_t = std::vector<SampleT>;
     using stream_t = audio_stream<SampleT>;
 
-    audio_output();
+    audio_output(stream_t* stream_ptr, size_t channels=2, size_t sample_rate=44100, size_t frame_size=2048);
     ~audio_output();
 
     void set_stream(stream_t* stream_ptr);
@@ -35,12 +35,19 @@ public:
     bool is_paused() { return output_state_ == audio_state::AS_PAUSED; }
     bool is_stopped() { return output_state_ == audio_state::AS_STOPPED; }
 
+    size_t channels() const { return channels_; }
+    size_t sample_rate() const { return sample_rate_; }
+    size_t frame_size() const { return frame_size_; }
+
     audio_state get_state() const { return output_state_; }
 
 protected:
     audio_state output_state_;
+    size_t channels_;
+    size_t sample_rate_;
+    size_t frame_size_;
 
-    static void audio_thread_fnc(audio_output* parent_ptr, size_t channels, size_t sample_rate, size_t frame_size);
+    static void audio_thread_fnc(audio_output* parent_ptr);
 
 private:
     struct state_t;

@@ -5,7 +5,7 @@ mp3_format lame_2_header(const mp3data_struct& mp3data);
 
 mp3_stream::mp3_stream(const std::string& filename, size_t frame_size, audio_stream<short>* parent) :
         filename_(filename), header_parsed_(false), file_size_(0), frame_size_(frame_size),
-        output_buffer_(100*mp3_frame_size), input_buffer_(100*frame_size), lame_(nullptr) {
+        output_buffer_(128*mp3_frame_size), input_buffer_(128*frame_size), lame_(nullptr) {
     read_buf.resize(frame_size);
 }
 
