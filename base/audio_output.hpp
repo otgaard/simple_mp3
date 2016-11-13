@@ -31,18 +31,18 @@ public:
     void pause();
     void stop();
 
-    bool is_playing() { return output_state_ == audio_state::AS_PLAYING; }
-    bool is_paused() { return output_state_ == audio_state::AS_PAUSED; }
-    bool is_stopped() { return output_state_ == audio_state::AS_STOPPED; }
+    bool is_playing() { return audio_state_ == audio_state::AS_PLAYING; }
+    bool is_paused() { return audio_state_ == audio_state::AS_PAUSED; }
+    bool is_stopped() { return audio_state_ == audio_state::AS_STOPPED; }
 
     size_t channels() const { return channels_; }
     size_t sample_rate() const { return sample_rate_; }
     size_t frame_size() const { return frame_size_; }
 
-    audio_state get_state() const { return output_state_; }
+    audio_state get_state() const { return audio_state_; }
 
 protected:
-    audio_state output_state_;
+    audio_state audio_state_;
     size_t channels_;
     size_t sample_rate_;
     size_t frame_size_;

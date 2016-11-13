@@ -149,7 +149,7 @@ void audio_output<SampleT>::audio_thread_fnc(audio_output* parent_ptr) {
         std::this_thread::sleep_for(scan_ms);
     }
 
-    parent_ptr->output_state_ = audio_state::AS_STOPPED;
+    parent_ptr->audio_state_ = audio_state::AS_STOPPED;
 
     if(Pa_Terminate() != paNoError) {
         SM_LOG("Pa_Terminate error:", err, Pa_GetErrorText(err));
@@ -159,7 +159,7 @@ void audio_output<SampleT>::audio_thread_fnc(audio_output* parent_ptr) {
 
 template <typename SampleT>
 audio_output<SampleT>::audio_output(stream_t* stream_ptr, size_t channels, size_t sample_rate, size_t frame_size)
-        : output_state_(audio_state::AS_STOPPED), channels_(channels), sample_rate_(sample_rate),
+        : audio_state_(audio_state::AS_STOPPED), channels_(channels), sample_rate_(sample_rate),
           frame_size_(frame_size), state_(new state_t()), s(*state_) {
     state_->context.stream_ptr = stream_ptr;
 }
@@ -188,14 +188,14 @@ void audio_output<SampleT>::play() {
 
     s.audio_thread = std::thread(audio_output<SampleT>::audio_thread_fnc, this);
 
-    output_state_ = audio_state::AS_PLAYING;
+    audio_state_ = audio_state::AS_PLAYING;
 }
 
 template <typename SampleT>
 void audio_output<SampleT>::pause() {
     SM_LOG("Pausing audio_output");
 
-    output_state_ = audio_state::AS_PAUSED;
+    audio_state_ = audio_state::AS_PAUSED;
 }
 
 template <typename SampleT>
@@ -205,7 +205,7 @@ void audio_output<SampleT>::stop() {
     s.context.shutdown = true;
     s.audio_thread.join();
 
-    output_state_ = audio_state::AS_STOPPED;
+    audio_state_ = audio_state::AS_STOPPED;
 }
 
 template class audio_output<short>;
