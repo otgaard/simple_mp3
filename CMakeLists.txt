@@ -22,6 +22,11 @@ set(ZAPAUDIO_SOURCE
     base/audio_output.cpp
     log.hpp)
 
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+#set(CMAKE_SKIP_BUILD_RPATH FALSE)
+#set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+
 set(ZAPAUDIO_FILES ${ZAPAUDIO_SOURCE} ${ZAPAUDIO_PUB_HEADERS})
 add_library(zapAudio SHARED ${ZAPAUDIO_FILES})
 target_include_directories(zapAudio PUBLIC ${lame_INCLUDE_DIRS} ${portaudio_INCLUDE_DIRS})
@@ -32,13 +37,8 @@ add_executable(simple_mp3 ${SOURCE_FILES})
 target_include_directories(simple_mp3 PUBLIC ${lame_INCLUDE_DIRS})
 target_link_libraries(simple_mp3 zapAudio ${lame_LIBRARIES} ${portaudio_LIBRARIES})
 
-set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-set(CMAKE_SKIP_BUILD_RPATH FALSE)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-
-install(TARGETS zapAudio DESTINATION lib)
-install(TARGETS simple_mp3 DESTINATION bin)
+install(TARGETS zapAudio LIBRARY DESTINATION lib)
+install(TARGETS simple_mp3 RUNTIME DESTINATION bin)
 
 foreach(library ${portaudio_LIBRARIES})
     get_filename_component(path ${library} REALPATH)
