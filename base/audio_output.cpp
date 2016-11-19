@@ -184,6 +184,7 @@ typename audio_output<SampleT>::stream_t* audio_output<SampleT>::get_stream() co
 
 template <typename SampleT>
 void audio_output<SampleT>::play() {
+    if(is_playing() || is_paused()) return;
     SM_LOG("Starting audio_output");
 
     s.audio_thread = std::thread(audio_output<SampleT>::audio_thread_fnc, this);
@@ -193,13 +194,15 @@ void audio_output<SampleT>::play() {
 
 template <typename SampleT>
 void audio_output<SampleT>::pause() {
+    if(is_stopped()) return;
     SM_LOG("Pausing audio_output");
 
-    audio_state_ = audio_state::AS_PAUSED;
+    audio_state_ = audio_state_ == audio_state::AS_PAUSED ? audio_state::AS_PLAYING : audio_state::AS_PAUSED;
 }
 
 template <typename SampleT>
 void audio_output<SampleT>::stop() {
+    if(is_stopped()) return;
     SM_LOG("Stopping audio_output");
 
     s.context.shutdown = true;
