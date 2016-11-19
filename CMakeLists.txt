@@ -14,12 +14,13 @@ set(ZAPAUDIO_PUB_HEADERS
     base/audio_stream.hpp
     base/wave_stream.hpp
     base/audio_output.hpp
-)
+    base/buffered_stream.hpp)
 
 set(ZAPAUDIO_SOURCE
     base/mp3_stream.cpp
     decoder/decoder.cpp
     base/audio_output.cpp
+    base/buffered_stream.cpp
     log.hpp)
 
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")

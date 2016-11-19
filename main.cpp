@@ -1,118 +1,30 @@
-#include <vector>
-#include <fstream>
-#include <iostream>
-#include <numeric>
-#include <portaudio.h>
-#include "base/wave_stream.hpp"
-#include "decoder/decoder.hpp"
-
-#include "log.hpp"
 #include "base/mp3_stream.hpp"
-
-const char* filename = "/Users/otgaard/Development/prototypes/simple_mp3/output/assets/chembros.wav";
-const char* mp3file = "/Users/otgaard/Development/prototypes/simple_mp3/output/assets/aphextwins.mp3";
-const char* mp3file2 = "/Users/otgaard/Development/prototypes/simple_mp3/output/assets/aphextwins2.mp3";
-const char* mp3file3 = "/Users/otgaard/Development/prototypes/simple_mp3/output/assets/opera.mp3";
-
-std::vector<short> buffer(1024);
-
-typedef int callback(const void* input, void* output, u_long frame_count,
-                     const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags status_flags,
-                     void* userdata);
-
-int wave_callback(const void* input, void* output, u_long frame_count, const PaStreamCallbackTimeInfo* time_info,
-                  PaStreamCallbackFlags status_flags, void* userdata) {
-    wave_stream* stream = static_cast<wave_stream*>(userdata);
-    short* out = static_cast<short*>(output);
-
-    auto len = stream->read(buffer, buffer.size());
-    if(len == 0) { std::cerr << "Complete" << std::endl; return paComplete; }
-    for(size_t i = 0; i != len; ++i) *out++ = buffer[i];
-    return paContinue;
-}
-
-int mp3_callback(const void* input, void* output, u_long frame_count, const PaStreamCallbackTimeInfo* time_info,
-                 PaStreamCallbackFlags status_flags, void* userdata) {
-    short* out = static_cast<short*>(output);
-    mp3_stream* stream = static_cast<mp3_stream*>(userdata);
-    auto len = stream->read(buffer, buffer.size());
-    if(len == 0) { std::cerr << "Complete" << std::endl; return paComplete; }
-    for(size_t i = 0; i != len; ++i) *out++ = buffer[i];
-    return paContinue;
-}
-
-block_buffer<short> sample_buffer;
-
-/*
-int main(int argc, char*argv[]) {
-    mp3_stream mstream(mp3file, 1024, nullptr);
-    mstream.start();
-    if(!mstream.is_open()) {
-        SM_LOG("Error opening mp3");
-        return -1;
-    }
-
-    if(Pa_Initialize() != paNoError) {
-        std::cerr << "Error initialising portaudio" << std::endl;
-        return -1;
-    }
-
-    PaStreamParameters outputParameters;
-    outputParameters.device = Pa_GetDefaultOutputDevice();
-    if(outputParameters.device == paNoDevice) {
-        std::cerr << "No suitable output device found by portaudio" << std::endl;
-        return -1;
-    }
-
-    PaStream* stream;
-
-    PaError err = Pa_OpenDefaultStream(
-            &stream,
-            0,
-            2, //wstream.get_header().num_channels,
-            paInt16,
-            44100, //wstream.get_header().sample_rate,
-            512, //512,
-            &mp3_callback,
-            &mstream //&sample_buffer //&wstream
-    );
-
-    if(err != paNoError) {
-        std::cerr << "Pa_OpenStream failed:" << err << Pa_GetErrorText(err) << std::endl;
-        if(stream) Pa_CloseStream(stream);
-        return -1;
-    }
-
-    if(Pa_StartStream(stream) != paNoError) {
-        std::cerr << "Pa_OpenStream failed:" << err << Pa_GetErrorText(err) << std::endl;
-        if(stream) Pa_CloseStream(stream);
-        return -1;
-    }
-
-    while(Pa_IsStreamActive(stream) > 0) Pa_Sleep(1000);
-
-    if(Pa_Terminate() != paNoError) {
-        std::cerr << "Pa_Terminate error:" << err << Pa_GetErrorText(err) << std::endl;
-        return -1;
-    }
-
-    return 0;
-}
-*/
-
-#include <thread>
 #include "base/audio_output.hpp"
+#include "base/buffered_stream.hpp"
+
+const char* const def_filname = "/Users/otgaard/download.mp3";
 
 int main(int argc, char* argv[]) {
-    //s.stream_ptr = new sine_wave<SampleT>(440);
-    auto mp3 = new mp3_stream("/Users/otgaard/Development/prototypes/simple_mp3/output/assets/aphextwins.mp3", 1024, nullptr);
-    mp3->start();
+    // Create an MP3 decoder stream
+    auto file_stream = std::make_unique<mp3_stream>(argc > 1 ? argv[1] : def_filname, 1024, nullptr);
+    file_stream->start();
 
-    audio_output_s16 audio_dev(mp3);
+    // Connect the MP3 decoder to a buffered stream because the MP3 decoder must do I/O.
+    const size_t kBUFFER_SIZE = 64*1024;            // The size of the whole buffer
+    const size_t kREFILL_SIZE = kBUFFER_SIZE/2;     // The size at which we should refill the buffer
+    const size_t kSCAN_MS = 60;                     // The milliseconds between refill scans
+    auto buf_stream = std::make_unique<buffered_stream<short>>(kBUFFER_SIZE, kREFILL_SIZE, kSCAN_MS, file_stream.get());
+    buf_stream->start();
+
+    // Use the buffered stream as the source for the audio device and play.
+    audio_output<short> audio_dev(buf_stream.get());
     audio_dev.play();
-    int counter = 0;
+
     while(audio_dev.is_playing()) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
-        counter++;
     }
+
+    audio_dev.stop();
+
+    return 0;
 }
