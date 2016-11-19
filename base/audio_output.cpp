@@ -149,7 +149,10 @@ void audio_output<SampleT>::audio_thread_fnc(audio_output* parent_ptr) {
         std::this_thread::sleep_for(scan_ms);
     }
 
-    parent_ptr->audio_state_ = audio_state::AS_STOPPED;
+    {
+        std::lock_guard<std::mutex> lock(context.context_mtx);
+        parent_ptr->audio_state_ = audio_state::AS_COMPLETED;
+    }
 
     if(Pa_Terminate() != paNoError) {
         SM_LOG("Pa_Terminate error:", err, Pa_GetErrorText(err));
@@ -166,7 +169,7 @@ audio_output<SampleT>::audio_output(stream_t* stream_ptr, size_t channels, size_
 
 template <typename SampleT>
 audio_output<SampleT>::~audio_output() {
-    if(is_playing() || is_paused()) {
+    if(!is_stopped()) {
         SM_LOG("Warning: audio_output was not stopped");
         stop();
     }
@@ -174,11 +177,11 @@ audio_output<SampleT>::~audio_output() {
 
 template <typename SampleT>
 void audio_output<SampleT>::set_stream(stream_t* stream_ptr) {
-    if(is_stopped()) {
-        s.context.stream_ptr = stream_ptr;
-        s.context.sample_buffer.clear();
-        s.context.shutdown = false;
-    }
+    if(!is_stopped()) stop();
+
+    s.context.stream_ptr = stream_ptr;
+    s.context.sample_buffer.clear();
+    s.context.shutdown = false;
 }
 
 template <typename SampleT>
@@ -188,8 +191,14 @@ typename audio_output<SampleT>::stream_t* audio_output<SampleT>::get_stream() co
 
 template <typename SampleT>
 void audio_output<SampleT>::play() {
-    if(is_playing() || is_paused()) return;
+    if(!is_stopped()) return;
+
     SM_LOG("Starting audio_output");
+
+    if(s.context.stream_ptr == nullptr) {
+        SM_LOG("No stream, cannot start audio_output");
+        return;
+    }
 
     s.audio_thread_ptr = std::make_unique<std::thread>(audio_output<SampleT>::audio_thread_fnc, this);
     audio_state_ = audio_state::AS_PLAYING;

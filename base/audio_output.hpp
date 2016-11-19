@@ -14,7 +14,8 @@ public:
     enum class audio_state {
         AS_STOPPED,
         AS_PLAYING,
-        AS_PAUSED
+        AS_PAUSED,
+        AS_COMPLETED
     };
 
     using sample_t = SampleT;
@@ -34,6 +35,7 @@ public:
     bool is_playing() { return audio_state_ == audio_state::AS_PLAYING; }
     bool is_paused() { return audio_state_ == audio_state::AS_PAUSED; }
     bool is_stopped() { return audio_state_ == audio_state::AS_STOPPED; }
+    bool is_completed() { return audio_state_ == audio_state::AS_COMPLETED; }
 
     size_t channels() const { return channels_; }
     size_t sample_rate() const { return sample_rate_; }
