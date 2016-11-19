@@ -39,12 +39,12 @@ struct audio_output<SampleT>::state_t {
 };
 
 typedef int callback(const void* input, void* output, u_long frame_count,
-    const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags status_flags,
-    void* userdata);
+                     const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags status_flags,
+                     void* userdata);
 
 int audio_output_callback_s16(const void* input, void* output, u_long frame_count,
-        const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags status_flags,
-        void* userdata) {
+                              const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags status_flags,
+                              void* userdata) {
     short* out = static_cast<short*>(output);
     using context = audio_context<short>;
     context* context_ptr = static_cast<context*>(userdata);
@@ -174,7 +174,11 @@ audio_output<SampleT>::~audio_output() {
 
 template <typename SampleT>
 void audio_output<SampleT>::set_stream(stream_t* stream_ptr) {
-    if(is_stopped()) s.context.stream_ptr = stream_ptr;
+    if(is_stopped()) {
+        s.context.stream_ptr = stream_ptr;
+        s.context.sample_buffer.clear();
+        s.context.shutdown = false;
+    }
 }
 
 template <typename SampleT>
