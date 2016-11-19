@@ -34,7 +34,7 @@ struct audio_context {
 
 template <typename SampleT>
 struct audio_output<SampleT>::state_t {
-    std::thread audio_thread;
+    std::unique_ptr<std::thread> audio_thread_ptr;
     audio_context<SampleT> context;
 };
 
@@ -187,8 +187,7 @@ void audio_output<SampleT>::play() {
     if(is_playing() || is_paused()) return;
     SM_LOG("Starting audio_output");
 
-    s.audio_thread = std::thread(audio_output<SampleT>::audio_thread_fnc, this);
-
+    s.audio_thread_ptr = std::make_unique<std::thread>(audio_output<SampleT>::audio_thread_fnc, this);
     audio_state_ = audio_state::AS_PLAYING;
 }
 
@@ -206,7 +205,8 @@ void audio_output<SampleT>::stop() {
     SM_LOG("Stopping audio_output");
 
     s.context.shutdown = true;
-    s.audio_thread.join();
+    s.audio_thread_ptr->join();
+    s.audio_thread_ptr.reset(nullptr);
 
     audio_state_ = audio_state::AS_STOPPED;
 }
