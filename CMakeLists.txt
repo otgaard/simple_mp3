@@ -14,7 +14,8 @@ set(ZAPAUDIO_PUB_HEADERS
     base/audio_stream.hpp
     base/wave_stream.hpp
     base/audio_output.hpp
-    base/buffered_stream.hpp)
+    base/buffered_stream.hpp
+    base/sine_wave.hpp)
 
 set(ZAPAUDIO_SOURCE
     base/mp3_stream.cpp
