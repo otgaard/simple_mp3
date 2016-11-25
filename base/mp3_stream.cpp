@@ -130,8 +130,8 @@ bool mp3_stream::strip_header() {
         header[2] &= 0x7f; header[3] &= 0x7f; header[4] &= 0x7f; header[5] &= 0x7f;
         size_t skip = (((((header[2] << 7) + header[3]) << 7) + header[4] ) << 7) + header[5];
         SM_LOG("skipping =", skip);
-        if(input_buffer_.skip(skip) != skip) return false;
-        if(input_buffer_.read(header, 4) != 4) return false;   // Reposition buffer
+        if(input_buffer_.skip(skip-4) != skip-4) return false;
+        if(input_buffer_.read(header, 4) != 4)   return false;   // Reposition buffer
     }
 
     if(memcmp(header, "AiD\1", 4) == 0) { // Check for Album ID Header
