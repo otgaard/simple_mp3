@@ -2,7 +2,7 @@
 #include "base/audio_output.hpp"
 #include "base/buffered_stream.hpp"
 
-const char* const def_filname = "/Users/otgaard/temp/test_track.mp3";
+const char* const def_filname = "/Users/otgaard/temp/1.mp3";
 
 int main(int argc, char* argv[]) {
     // Create an MP3 decoder stream

@@ -130,7 +130,20 @@ bool mp3_stream::strip_header() {
         header[2] &= 0x7f; header[3] &= 0x7f; header[4] &= 0x7f; header[5] &= 0x7f;
         size_t skip = (((((header[2] << 7) + header[3]) << 7) + header[4] ) << 7) + header[5];
         SM_LOG("skipping =", skip);
-        if(input_buffer_.skip(skip-4) != skip-4) return false;
+
+        // The skip size sometimes includes the header
+        skip -= 4;
+
+        size_t skipped;
+        do {
+            skipped = input_buffer_.skip(skip);
+            if(skipped < skip) {
+                fill_input_buffer();
+            }
+            skip -= skipped;
+        } while(skipped != 0 && skip != 0);
+
+        if(skip != 0)                            return false;
         if(input_buffer_.read(header, 4) != 4)   return false;   // Reposition buffer
     }
 
