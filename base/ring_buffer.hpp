@@ -61,7 +61,7 @@ public:
             auto old_read = read_;
             std::copy(buffer_.begin() + read_, buffer_.begin() + write_, ptr);
             read_ = write_;
-            return write_ - read_;
+            return write_ - old_read;
         } else if(read_ > write_) {
             if(read_ + len < buffer_.size()) {
                 std::copy(buffer_.begin()+read_, buffer_.begin() + read_ + len, ptr);
@@ -93,7 +93,7 @@ public:
             auto old_read = read_;
             std::copy(buffer_.begin() + read_, buffer_.begin() + write_, ptr);
             read_ = write_;
-            return write_ - read_;
+            return write_ - old_read;
         } else if(read_ > write_) {
             if(read_ + len < buffer_.size()) {
                 std::copy(buffer_.begin()+read_, buffer_.begin() + read_ + len, ptr);
