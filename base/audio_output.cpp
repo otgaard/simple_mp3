@@ -66,8 +66,32 @@ int audio_output_callback_s16(const void* input, void* output, u_long frame_coun
     return paContinue;
 }
 
-template <typename SampleT>
-void audio_output<SampleT>::audio_thread_fnc(audio_output* parent_ptr) {
+int audio_output_callback_f32(const void* input, void* output, u_long frame_count,
+                              const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags status_flags,
+                              void* userdata) {
+    float* out = static_cast<float*>(output);
+    using context = audio_context<float>;
+    context* context_ptr = static_cast<context*>(userdata);
+
+    if(!context_ptr) {
+        SM_LOG("Null context passed. Aborting");
+        return paAbort;
+    }
+
+    static typename context::buffer_t buffer(context_ptr->buffer_size);
+    size_t len = context_ptr->stream_ptr->read(buffer, context_ptr->buffer_size);
+
+    if(len == 0 || context_ptr->shutdown) {
+        SM_LOG("Complete");
+        return paComplete;
+    }
+
+    for(size_t i = 0; i != len; ++i) *out++ = buffer[i];
+    return paContinue;
+}
+
+template <>
+void audio_output<short>::audio_thread_fnc(audio_output* parent_ptr) {
     SM_LOG("Starting", parent_ptr->channels(), parent_ptr->sample_rate(), parent_ptr->frame_size());
 
     auto context_ptr = &parent_ptr->s.context;
@@ -94,10 +118,70 @@ void audio_output<SampleT>::audio_thread_fnc(audio_output* parent_ptr) {
             &pa_stream,
             0,
             int(parent_ptr->channels()),
-            data_type_table<SampleT>::value,
+            data_type_table<short>::value,
             parent_ptr->sample_rate(),
             context_ptr->channel_frame_size,
             &audio_output_callback_s16,
+            context_ptr
+    );
+
+    if(err != paNoError) {
+        SM_LOG("Pa_OpenStream failed:", err, Pa_GetErrorText(err));
+        if(pa_stream) Pa_CloseStream(pa_stream);
+        return;
+    }
+
+    if(Pa_StartStream(pa_stream) != paNoError) {
+        SM_LOG("Pa_StartStream failed:", err, Pa_GetErrorText(err));
+        if(pa_stream) Pa_CloseStream(pa_stream);
+        return;
+    }
+
+    while(Pa_IsStreamActive(pa_stream) > 0) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+
+    // Should lock this (atomic type?)
+    parent_ptr->audio_state_ = audio_state::AS_COMPLETED;
+
+    if(Pa_Terminate() != paNoError) {
+        SM_LOG("Pa_Terminate error:", err, Pa_GetErrorText(err));
+        return;
+    }
+}
+
+template <>
+void audio_output<float>::audio_thread_fnc(audio_output* parent_ptr) {
+    SM_LOG("Starting", parent_ptr->channels(), parent_ptr->sample_rate(), parent_ptr->frame_size());
+
+    auto context_ptr = &parent_ptr->s.context;
+
+    context_ptr->channels = parent_ptr->channels();
+    context_ptr->sample_rate = parent_ptr->sample_rate();
+    context_ptr->channel_frame_size = parent_ptr->frame_size()/parent_ptr->channels();
+    context_ptr->buffer_size = parent_ptr->frame_size();
+
+    if(Pa_Initialize() != paNoError) {
+        SM_LOG("Error initialising portaudio");
+        return;
+    }
+
+    PaStreamParameters output_parms;
+    output_parms.device = Pa_GetDefaultOutputDevice();
+    if(output_parms.device == paNoDevice) {
+        SM_LOG("Portaudio could not find a default playback device");
+        return;
+    }
+
+    PaStream* pa_stream;
+    PaError err = Pa_OpenDefaultStream(
+            &pa_stream,
+            0,
+            int(parent_ptr->channels()),
+            data_type_table<float>::value,
+            parent_ptr->sample_rate(),
+            context_ptr->channel_frame_size,
+            &audio_output_callback_f32,
             context_ptr
     );
 
@@ -191,4 +275,4 @@ void audio_output<SampleT>::stop() {
 }
 
 template class audio_output<short>;
-//template class audio_output<float>;
+template class audio_output<float>;
