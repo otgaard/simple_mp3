@@ -19,6 +19,8 @@ public:
     virtual size_t read(buffer_t& buffer, size_t len) = 0;
     virtual size_t write(const buffer_t& buffer, size_t len) = 0;
 
+    virtual sample_t read() { return 0; }
+
 protected:
     audio_stream<SampleT>* parent() const { return parent_; }
 
