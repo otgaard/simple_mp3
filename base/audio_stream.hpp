@@ -9,6 +9,8 @@
 #include <vector>
 #ifdef _WIN32
 #include "zapAudio_exports.h"
+#else
+#define ZAPAUDIO_EXPORT
 #endif
 
 template <typename SampleT>
