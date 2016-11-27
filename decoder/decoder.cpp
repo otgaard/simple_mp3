@@ -6,7 +6,11 @@
 #include "../log.hpp"
 #include "decoder.hpp"
 #include <cassert>
+#ifdef _WIN32
+#include <lame.h>
+#else
 #include <lame/lame.h>
+#endif //_WIN32
 #include <cstring>
 
 using byte = unsigned char;
@@ -57,12 +61,12 @@ block_buffer<short> decoder::decode_file(const std::string& filename) {
     file.seekg(0, std::ios_base::end);
     auto file_len = file.tellg();
     file.seekg(0, std::ios_base::beg);
-    assert(file.tellg() == 0);
-    std::vector<byte> buffer(file_len);
-    file.read((char*)buffer.data(), file_len);
+    assert(file.tellg() == std::streamoff(0));
+	std::vector<byte> buffer((size_t)file_len);
+    file.read((char*)(buffer.data()), file_len);
     file.close();
 
-    file_contents.write(buffer.data(), file_len);
+    file_contents.write(buffer.data(), (size_t)file_len);
     SM_LOG("File Loaded, size =", file_contents.size() / (1000000.f), "MB");
 
     // First, we need to skip the id3 header and position the file on the start of the mp3 header stream.  We therefore

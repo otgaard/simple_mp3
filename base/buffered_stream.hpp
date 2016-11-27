@@ -13,7 +13,7 @@
 #include "ring_buffer.hpp"
 
 template <typename SampleT>
-class buffered_stream : public audio_stream<SampleT> {
+class ZAPAUDIO_EXPORT buffered_stream : public audio_stream<SampleT> {
 public:
     using stream_t = audio_stream<SampleT>;
     using buffer_t = typename stream_t::buffer_t;
@@ -37,6 +37,5 @@ private:
     std::mutex buffer_mtx_;
     std::atomic<bool> shutdown_;
 };
-
 
 #endif //ZAPAUDIO_BUFFERED_STREAM_HPP

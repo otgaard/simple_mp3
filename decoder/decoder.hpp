@@ -7,7 +7,12 @@
 
 #include <vector>
 #include <algorithm>
+#include <iterator>
+#ifdef _WIN32
+#include <lame.h>
+#else
 #include <lame/lame.h>
+#endif //_WIN32
 #include "../base/mp3_stream.hpp"
 
 /*

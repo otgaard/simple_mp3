@@ -21,7 +21,7 @@ typedef hip_global_flags *hip_t;
 
 using byte = unsigned char;
 
-struct mp3_format {
+struct ZAPAUDIO_EXPORT mp3_format {
     int samplerate;
     int bitrate;
     int channels;
@@ -31,7 +31,7 @@ struct mp3_format {
 
 constexpr size_t mp3_frame_size = 1152;
 
-class mp3_stream : public audio_stream<short> {
+class ZAPAUDIO_EXPORT mp3_stream : public audio_stream<short> {
 public:
     mp3_stream(const std::string& filename, size_t frame_size, audio_stream<short>* parent);
     virtual ~mp3_stream();
@@ -71,7 +71,6 @@ private:
     std::ifstream file_;
     lame_t lame_;
     hip_t hip_;
-    //mp3data_struct mp3data_;
 };
 
 #endif //SIMPLE_MP3_MP3_STREAM_HPP

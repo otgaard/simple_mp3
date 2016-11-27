@@ -7,6 +7,9 @@
 
 #include <cstddef>
 #include <vector>
+#ifdef _WIN32
+#include "zapAudio_exports.h"
+#endif
 
 template <typename SampleT>
 class audio_stream {

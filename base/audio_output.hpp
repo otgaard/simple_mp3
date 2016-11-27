@@ -9,7 +9,7 @@
  */
 
 template <typename SampleT>
-class audio_output {
+class ZAPAUDIO_EXPORT audio_output {
 public:
     enum class audio_state {
         AS_STOPPED,

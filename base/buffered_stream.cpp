@@ -68,5 +68,5 @@ void buffered_stream<SampleT>::scan_thread(buffered_stream* ptr) {
     }
 }
 
-template class buffered_stream<short>;
-template class buffered_stream<float>;
+template class ZAPAUDIO_EXPORT buffered_stream<short>;
+template class ZAPAUDIO_EXPORT buffered_stream<float>;

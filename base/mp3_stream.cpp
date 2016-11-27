@@ -1,5 +1,10 @@
 #include "mp3_stream.hpp"
+#include <algorithm>
+#ifdef _WIN32
+#include <lame.h>
+#else
 #include <lame/lame.h>
+#endif //_WIN32
 #include "../log.hpp"
 #include <cstring>
 
@@ -22,7 +27,7 @@ bool mp3_stream::start() {
 
     if(file_.is_open()) {
         file_.seekg(0, std::ios::end);
-        file_size_ = file_.tellg();
+        file_size_ = (size_t)file_.tellg();
         file_.seekg(0, std::ios::beg);
 
         fill_input_buffer();
@@ -82,7 +87,7 @@ void mp3_stream::fill_input_buffer() {
     while(is_open() && (input_buffer_.size() < input_buffer_.capacity()/2)) {
         auto rd = std::min(size_t(file_size_ - file_.tellg()), frame_size_);
         file_.read(reinterpret_cast<char*>(read_buf.data()), frame_size_);
-        size_t off = file_.tellg();
+        size_t off = (size_t)file_.tellg();
         if(off == -1) file_.close();
         else          input_buffer_.write(read_buf.data(), rd);
     }

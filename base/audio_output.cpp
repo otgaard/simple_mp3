@@ -8,6 +8,10 @@
 #include "sine_wave.hpp"
 #include "mp3_stream.hpp"
 
+#ifdef _WIN32
+typedef unsigned long u_long;
+#endif
+
 template <typename SampleT>
 struct data_type_table;
 
@@ -275,5 +279,5 @@ void audio_output<SampleT>::stop() {
     audio_state_ = audio_state::AS_STOPPED;
 }
 
-template class audio_output<short>;
-template class audio_output<float>;
+template class ZAPAUDIO_EXPORT audio_output<short>;
+template class ZAPAUDIO_EXPORT audio_output<float>;
