@@ -9,6 +9,7 @@
 #include "ring_buffer.hpp"
 #include <fstream>
 #include <cassert>
+#include <limits>
 
 struct lame_global_struct;
 typedef struct lame_global_struct lame_global_flags;

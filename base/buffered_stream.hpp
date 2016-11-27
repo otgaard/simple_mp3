@@ -7,6 +7,8 @@
  */
 
 #include <thread>
+#include <atomic>
+#include <mutex>
 #include "audio_stream.hpp"
 #include "ring_buffer.hpp"
 

@@ -7,6 +7,7 @@
 #include "decoder.hpp"
 #include <cassert>
 #include <lame/lame.h>
+#include <cstring>
 
 using byte = unsigned char;
 

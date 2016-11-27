@@ -5,6 +5,7 @@
 #ifndef ZAPAUDIO_AUDIO_STREAM_H
 #define ZAPAUDIO_AUDIO_STREAM_H
 
+#include <cstddef>
 #include <vector>
 
 template <typename SampleT>

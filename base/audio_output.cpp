@@ -1,4 +1,5 @@
 #include "audio_output.hpp"
+#include <atomic>
 #include <thread>
 #include <mutex>
 #include <portaudio.h>
