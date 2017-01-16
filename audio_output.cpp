@@ -3,10 +3,8 @@
 #include <thread>
 #include <mutex>
 #include <portaudio.h>
-#include "../log.hpp"
+#include "log.hpp"
 #include "ring_buffer.hpp"
-#include "sine_wave.hpp"
-#include "mp3_stream.hpp"
 
 #ifdef _WIN32
 typedef unsigned long u_long;
@@ -28,9 +26,7 @@ struct audio_context {
     size_t channel_frame_size;
     size_t buffer_size;
 
-    //ring_buffer<SampleT> sample_buffer;
     stream_t* stream_ptr;
-    //std::mutex context_mtx;
     std::atomic<bool> shutdown;
 
     audio_context() : stream_ptr(nullptr) { }

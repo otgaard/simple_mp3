@@ -19,22 +19,26 @@ endif(APPLE OR UNIX)
 
 set(CMAKE_CXX_STANDARD 14)
 
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 set(ZAPAUDIO_PUB_HEADERS
-    decoder/decoder.hpp
-    base/ring_buffer.hpp
-    base/mp3_stream.hpp
-    base/audio_stream.hpp
-    base/wave_stream.hpp
-    base/audio_output.hpp
-    base/buffered_stream.hpp
-    base/sine_wave.hpp base/adapter_stream.hpp)
+        tools/file_decoder.hpp
+        ring_buffer.hpp
+        streams/mp3_stream.hpp
+        streams/audio_stream.hpp
+        streams/wave_stream.hpp
+        audio_output.hpp
+        streams/buffered_stream.hpp
+        streams/sine_wave.hpp
+        block_buffer.hpp
+        streams/adapter_stream.hpp)
 
 set(ZAPAUDIO_SOURCE
-    base/mp3_stream.cpp
-    decoder/decoder.cpp
-    base/audio_output.cpp
-    base/buffered_stream.cpp
-    log.hpp)
+        streams/mp3_stream.cpp
+        tools/file_decoder.cpp
+        audio_output.cpp
+        streams/buffered_stream.cpp
+        log.hpp)
 
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
@@ -50,7 +54,7 @@ endif(APPLE OR UNIX)
 target_include_directories(zapAudio PUBLIC ${lame_INCLUDE_DIRS} ${portaudio_INCLUDE_DIRS})
 target_link_libraries(zapAudio ${lame_LIBRARIES} ${portaudio_LIBRARIES})
 
-set(SOURCE_FILES main.cpp)
+set(SOURCE_FILES simple_mp3.cpp)
 add_executable(simple_mp3 ${SOURCE_FILES})
 target_include_directories(simple_mp3 PUBLIC ${lame_INCLUDE_DIRS})
 target_link_libraries(simple_mp3 zapAudio ${lame_LIBRARIES} ${portaudio_LIBRARIES})

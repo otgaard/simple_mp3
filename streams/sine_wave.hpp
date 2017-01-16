@@ -10,7 +10,7 @@
 #include "audio_stream.hpp"
 
 /*
- * An audio_stream implementation of a 440 Hz sine wave.
+ * An audio_stream implementation of a sine wave generator.
  */
 
 template <typename SampleT>

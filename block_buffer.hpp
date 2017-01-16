@@ -1,37 +1,17 @@
 //
-// Created by Darren Otgaar on 2016/01/28.
+// Created by Darren Otgaar on 2017/01/16.
 //
 
-#ifndef SIMPLE_MP3_DECODER_H
-#define SIMPLE_MP3_DECODER_H
+#ifndef ZAPAUDIO_BLOCK_BUFFER_HPP
+#define ZAPAUDIO_BLOCK_BUFFER_HPP
 
 #include <vector>
-#include <algorithm>
-#include <iterator>
-#ifdef _WIN32
-#include <lame.h>
-#else
-#include <lame/lame.h>
-#endif //_WIN32
-#include "../base/mp3_stream.hpp"
-
-/*
-using byte = unsigned char;
-
-struct mp3_format {
-    int samplerate;
-    int bitrate;
-    int channels;
-    int total_frames;
-    int duration;   // In seconds
-};
-*/
 
 template <typename T>
 class block_buffer {
 public:
     block_buffer() : cursor_(0) { }
-    ~block_buffer() { }
+    ~block_buffer() = default;
 
     size_t size() const { return buffer_.size(); }
 
@@ -43,9 +23,7 @@ public:
 
     size_t read(T* block, size_t len) {
         const size_t step = std::min(len, buffer_.size() - cursor_);
-        auto start = buffer_.begin() + cursor_;
-        auto end = buffer_.begin() + cursor_ + step;
-        std::copy(start, end, block);
+        std::copy(buffer_.begin() + cursor_, buffer_.begin() + cursor_ + step, block);
         cursor_ += step;
         return step;
     }
@@ -65,17 +43,4 @@ private:
     std::vector<T> buffer_;
 };
 
-class decoder {
-public:
-    bool initialise();
-    void shutdown();
-
-    block_buffer<short> decode_file(const std::string& filename);
-
-private:
-    lame_t lame_;
-    hip_t hip_;
-    mp3_format format_;
-};
-
-#endif //SIMPLE_MP3_DECODER_H
+#endif //ZAPAUDIO_BLOCK_BUFFER_HPP

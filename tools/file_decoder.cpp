@@ -4,7 +4,7 @@
 
 #include <fstream>
 #include "../log.hpp"
-#include "decoder.hpp"
+#include "file_decoder.hpp"
 #include <cassert>
 #ifdef _WIN32
 #include <lame.h>
@@ -18,7 +18,7 @@ using byte = unsigned char;
 bool strip_header(block_buffer<byte>& buffer);
 bool is_syncword_mp123(const byte* ptr);
 
-bool decoder::initialise() {
+bool file_decoder::initialise() {
     lame_ = lame_init();
     if(!lame_) {
         SM_LOG("LAME failed to initialise");
@@ -36,7 +36,7 @@ bool decoder::initialise() {
     return true;
 }
 
-void decoder::shutdown() {
+void file_decoder::shutdown() {
     hip_decode_exit(hip_);
     hip_ = nullptr;
     lame_close(lame_);
@@ -51,7 +51,7 @@ int zip(block_buffer<short>& buffer, short* left_pcm, short* right_pcm, int len)
     return len;
 }
 
-block_buffer<short> decoder::decode_file(const std::string& filename) {
+block_buffer<short> file_decoder::decode_file(const std::string& filename) {
     block_buffer<byte> file_contents;
     block_buffer<short> sample_buffer;
 

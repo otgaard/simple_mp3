@@ -2,10 +2,10 @@
 #define ZAPAUDIO_AUDIO_OUTPUT_HPP
 
 #include <memory>
-#include "audio_stream.hpp"
+#include "streams/audio_stream.hpp"
 
 /*
- * audio_output is the "device" that makes streams audible.
+ * audio_output is the output device and interface to portaudio.
  */
 
 template <typename SampleT>
