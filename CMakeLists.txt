@@ -23,14 +23,14 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(ZAPAUDIO_PUB_HEADERS
         tools/file_decoder.hpp
-        ring_buffer.hpp
+        buffers/ring_buffer.hpp
         streams/mp3_stream.hpp
         streams/audio_stream.hpp
         streams/wave_stream.hpp
         audio_output.hpp
         streams/buffered_stream.hpp
         streams/sine_wave.hpp
-        block_buffer.hpp
+        buffers/block_buffer.hpp
         streams/adapter_stream.hpp)
 
 set(ZAPAUDIO_SOURCE

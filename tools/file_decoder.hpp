@@ -14,7 +14,7 @@
 #include <lame/lame.h>
 #endif //_WIN32
 #include "streams/mp3_stream.hpp"
-#include "block_buffer.hpp"
+#include "buffers/block_buffer.hpp"
 
 class file_decoder {
 public:

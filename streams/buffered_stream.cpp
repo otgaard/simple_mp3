@@ -26,7 +26,6 @@ bool buffered_stream<SampleT>::start() {
 
 template <typename SampleT>
 size_t buffered_stream<SampleT>::read(buffer_t& buffer, size_t len) {
-    std::lock_guard<std::mutex> lock(buffer_mtx_);
     return buffer_.read(buffer.data(), len);
 }
 
@@ -56,12 +55,9 @@ void buffered_stream<SampleT>::scan_thread(buffered_stream* ptr) {
             cache_cur = parent_ptr->read(cache, ptr->refill_);
         }
 
-        {
-            std::lock_guard<std::mutex> lock(ptr->buffer_mtx_);
-            if(ptr->buffer_.size() < ptr->refill_) {
-                ptr->buffer_.write(cache.data(), cache_cur);
-                cache_cur = 0;
-            }
+        if(ptr->buffer_.size() < ptr->refill_) {
+            ptr->buffer_.write(cache.data(), cache_cur);
+            cache_cur = 0;
         }
 
         std::this_thread::sleep_for(scan_ms);

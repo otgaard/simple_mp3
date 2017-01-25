@@ -6,7 +6,7 @@
 #define SIMPLE_MP3_MP3_STREAM_HPP
 
 #include "audio_stream.hpp"
-#include "ring_buffer.hpp"
+#include "buffers/ring_buffer.hpp"
 #include <fstream>
 #include <cassert>
 #include <limits>
@@ -65,8 +65,8 @@ private:
     bool header_parsed_;
     size_t file_size_;
     size_t frame_size_;
-    ring_buffer<short> output_buffer_;
-    ring_buffer<byte> input_buffer_;
+    ring_buffer<short, int> output_buffer_;
+    ring_buffer<byte, int> input_buffer_;
     mp3_format header_;
     std::ifstream file_;
     lame_t lame_;

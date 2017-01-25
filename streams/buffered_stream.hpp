@@ -10,7 +10,7 @@
 #include <atomic>
 #include <mutex>
 #include "audio_stream.hpp"
-#include "ring_buffer.hpp"
+#include "buffers/ring_buffer.hpp"
 
 template <typename SampleT>
 class ZAPAUDIO_EXPORT buffered_stream : public audio_stream<SampleT> {
@@ -30,11 +30,10 @@ protected:
     static void scan_thread(buffered_stream* ptr);
 
 private:
-    ring_buffer<SampleT> buffer_;
+    ring_buffer<SampleT, int> buffer_;
     size_t refill_;
     size_t scan_freq_;
     std::thread scan_thread_;
-    std::mutex buffer_mtx_;
     std::atomic<bool> shutdown_;
 };
 

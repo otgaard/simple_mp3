@@ -125,7 +125,7 @@ void mp3_stream::fill_output_buffer() {
 }
 
 bool mp3_stream::strip_header() {
-    assert(input_buffer_.read_position() == 0 && "buffer should be positioned at zero");
+    assert(input_buffer_.read_cursor() == 0 && "buffer should be positioned at zero");
     byte header[100];
     if(input_buffer_.read(header, 4) != 4) return false;
 

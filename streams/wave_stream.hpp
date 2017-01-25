@@ -9,7 +9,7 @@
 #include <string>
 #include <fstream>
 #include "audio_stream.hpp"
-#include "ring_buffer.hpp"
+#include "buffers/ring_buffer.hpp"
 
 struct WAVE {
     char chunk_id[4];

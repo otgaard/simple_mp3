@@ -4,7 +4,7 @@
 #include <mutex>
 #include <portaudio.h>
 #include "log.hpp"
-#include "ring_buffer.hpp"
+#include "buffers/ring_buffer.hpp"
 
 #ifdef _WIN32
 typedef unsigned long u_long;
