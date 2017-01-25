@@ -164,7 +164,6 @@ public:
             return len;
         } else {
             if(mod_read < curr_write) {
-                int d = mod_ - read_;
                 read_ = mod_read;
                 return len;
             } else if(mod_read == new_read) {
