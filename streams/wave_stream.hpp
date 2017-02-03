@@ -85,7 +85,7 @@ protected:
 
     bool fill_buffer() {
         if(file_.is_open() && !file_.eof()) {
-            if(buffer_.remaining() < buffer_update*frame_size_) return false;
+            if(buffer_.capacity() < buffer_update*frame_size_) return false;
             auto rd = std::min(size_t(file_length_ - file_.tellg()), buffer_fetch*frame_size_);
             std::vector<short> arr(rd);
             file_.read(reinterpret_cast<char*>(arr.data()), rd*sizeof(short));
@@ -101,7 +101,7 @@ private:
     std::string filename_;
     size_t file_length_;
     size_t frame_size_;
-    ring_buffer<short> buffer_;
+    ring_buffer<short,int,false> buffer_;
     WAVE header_;
     std::ifstream file_;
 };

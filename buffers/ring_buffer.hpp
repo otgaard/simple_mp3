@@ -5,11 +5,32 @@
 #ifndef ZAPAUDIO_RING_BUFFER_HPP
 #define ZAPAUDIO_RING_BUFFER_HPP
 
+#include <atomic>
 #include <vector>
-#include <numeric>
+#include <limits>
 #include <cassert>
 
-template <typename T, typename IndexT, typename CursorT=std::atomic<IndexT>>
+template <typename IndexT, bool IsAtomic>
+struct index_traits;
+
+template <typename IndexT>
+struct index_traits<IndexT, true> {
+    using value_t = IndexT;
+    using index_t = std::atomic<IndexT>;
+    static inline value_t load(const index_t& idx) { return idx.load(std::memory_order_relaxed); }
+    static inline void store(index_t& idx, value_t value) { idx.store(value, std::memory_order_relaxed); }
+};
+
+template <typename IndexT>
+struct index_traits<IndexT, false> {
+    using value_t = IndexT;
+    using index_t = IndexT;
+    static inline value_t load(const index_t& idx) { return idx; }
+    static inline void store(index_t& idx, value_t value) { idx = value; }
+};
+
+
+template <typename T, typename IndexT, bool IsAtomic=true, typename IndexTraits=index_traits<IndexT, IsAtomic>>
 class ring_buffer {
 public:
     static_assert(std::is_integral<IndexT>::value, "IndexT must be integral type");
@@ -17,7 +38,7 @@ public:
     using type = T;
     using ptr_t = T*;
     using idx_type = IndexT;
-    using cursor_type = CursorT;
+    using cursor_type = typename IndexTraits::index_t;
 
     ring_buffer() = default;
     ring_buffer(size_t size) : buffer_(size+1), read_(0), write_(0), mod_(idx_type(size+1)) {
@@ -53,10 +74,10 @@ public:
     idx_type capacity() const { return mod_ - size() - 1; }
 
     bool read(T& val) {
-        idx_type curr_read = read_;
-        if(curr_read == write_) return false;
+        idx_type curr_read = IndexTraits::load(read_);
+        if(curr_read == IndexTraits::load(write_)) return false;
         val = buffer_[curr_read];
-        read_ = (curr_read + 1) % mod_;
+        IndexTraits::store(read_, (curr_read + 1) % mod_);
         return true;
     }
 
@@ -89,10 +110,11 @@ public:
 
     // This is a non-overwriting ring_buffer
     bool write(const T& val) {
-        idx_type curr_write = write_;
-        if(read_ == (curr_write + 1) % mod_) return false;
+        idx_type curr_write = IndexTraits::load(write_);
+        idx_type new_write = (curr_write + 1) % mod_;
+        if(IndexTraits::load(read_) == new_write) return false;
         buffer_[curr_write] = val;
-        write_ = (curr_write + 1) % mod_;
+        IndexTraits::store(write_, new_write);
         return true;
     }
 
@@ -180,169 +202,5 @@ protected:
     cursor_type write_;
     idx_type mod_;
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* OLD RING_BUFFER
-
-// Note: This is an overwriting ring buffer.  If the buffer is full, it will start overwriting the oldest data.
-// The implementation may optionally check the size of the buffer prior to writing to implement queueing; however, for
-// audio, it usually makes sense to just overwrite.
-
-template <typename T>
-class ring_buffer {
-public:
-    static_assert(std::is_trivially_constructible<T>::value && std::is_copy_constructible<T>::value,
-                  "ring_buffer<> type requires trivial construction and copy construction");
-    ring_buffer() : mod_(0), read_(0), write_(0) { }
-    ring_buffer(size_t mod) : mod_(mod), read_(0), write_(0), buffer_(mod) { }
-    ~ring_buffer() = default;
-
-    void resize(size_t mod) { mod_ = mod; buffer_.resize(mod); clear(); }
-
-    void clear() { read_ = write_ = 0; }
-    bool is_empty() const { return read_ == write_; }
-    bool is_full() const { return read_ == (write_ + 1) % mod_; }
-    size_t read_position() const { return read_; }
-    const T* read_ptr() const { return buffer_.data()+read_; }
-    const T* write_ptr() const { return buffer_.data()+write_; }
-    size_t write_position() const { return write_; }
-    size_t capacity() const { return mod_; }
-    size_t size() const { return read_ <= write_ ? write_ - read_ : mod_ - read_ + write_ + 1; }
-    size_t remaining() const { return read_ <= write_ ? mod_ - write_ + read_ : read_ - write_ - 1; }
-
-    size_t write(const T* ptr, size_t len) {
-        if(write_ + len < read_) {
-            std::copy(ptr, ptr+len, buffer_.begin()+write_);
-            write_ += len;
-        } else if(write_ + len >= read_) {
-            if(write_ + len >= buffer_.size()) {
-                size_t d = buffer_.size() - write_;
-                std::copy(ptr, ptr+d, buffer_.begin()+write_);
-                if(d != mod_) std::copy(ptr+d, ptr+len, buffer_.begin());
-                if((write_ + len) % mod_ >= read_) read_ = (write_ + len) % mod_ + 1;
-            } else {
-                std::copy(ptr, ptr+len, buffer_.begin()+write_);
-            }
-            write_ = (write_ + len) % mod_;
-        }
-        return len;
-    }
-
-    size_t read(T* ptr, size_t len) {
-        if(read_ + len <= write_) {
-            std::copy(buffer_.begin() + read_, buffer_.begin() + read_ + len, ptr);
-            read_ += len;
-            return len;
-        } else if(read_ < write_) {
-            auto old_read = read_;
-            std::copy(buffer_.begin() + read_, buffer_.begin() + write_, ptr);
-            read_ = write_;
-            return write_ - old_read;
-        } else if(read_ > write_) {
-            if(read_ + len < buffer_.size()) {
-                std::copy(buffer_.begin()+read_, buffer_.begin() + read_ + len, ptr);
-                read_ += len;
-                return len;
-            } else {
-                size_t d = buffer_.size() - read_;
-                std::copy(buffer_.begin()+read_, buffer_.begin()+read_+d, ptr);
-                if(len - d <= write_) {
-                    std::copy(buffer_.begin(), buffer_.begin()+(len-d), ptr+d);
-                    read_ = len - d;
-                    return len;
-                } else {
-                    std::copy(buffer_.begin(), buffer_.begin()+write_, ptr+d);
-                    read_ = write_;
-                    return d + write_;
-                }
-            }
-        } else {
-            return 0;
-        }
-    }
-
-    size_t peek(T* ptr, size_t len) {
-        if(read_ + len <= write_) {
-            std::copy(buffer_.begin() + read_, buffer_.begin() + read_ + len, ptr);
-            return len;
-        } else if(read_ < write_) {
-            auto old_read = read_;
-            std::copy(buffer_.begin() + read_, buffer_.begin() + write_, ptr);
-            read_ = write_;
-            return write_ - old_read;
-        } else if(read_ > write_) {
-            if(read_ + len < buffer_.size()) {
-                std::copy(buffer_.begin()+read_, buffer_.begin() + read_ + len, ptr);
-                return len;
-            } else {
-                size_t d = buffer_.size() - read_;
-                std::copy(buffer_.begin()+read_, buffer_.begin()+read_+d, ptr);
-                if(len - d <= write_) {
-                    std::copy(buffer_.begin(), buffer_.begin()+(len-d), ptr+d);
-                    return len;
-                } else {
-                    std::copy(buffer_.begin(), buffer_.begin()+write_, ptr+d);
-                    return d + write_;
-                }
-            }
-        } else {
-            return 0;
-        }
-    }
-
-    size_t skip(size_t len) {
-        if(read_ + len <= write_) {
-            read_ += len;
-            return len;
-        } else if(read_ < write_) {
-            auto old_read = read_;
-            read_ = write_;
-            return write_ - old_read;
-        } else if(read_ > write_) {
-            if(read_ + len < buffer_.size()) {
-                read_ += len;
-                return len;
-            } else {
-                size_t d = buffer_.size() - read_;
-                if(len - d <= write_) {
-                    read_ = len - d;
-                    return len;
-                } else {
-                    read_ = write_;
-                    return d + write_;
-                }
-            }
-        } else {
-            return 0;
-        }
-    }
-
-private:
-    size_t mod_;
-    size_t read_;
-    size_t write_;
-    std::vector<T> buffer_;
-};
-*/
 
 #endif //ZAPAUDIO_RING_BUFFER_HPP
