@@ -56,8 +56,7 @@ void buffered_stream<SampleT>::scan_thread(buffered_stream* ptr) {
         }
 
         if(ptr->buffer_.size() < ptr->refill_) {
-            ptr->buffer_.write(cache.data(), cache_cur);
-            cache_cur = 0;
+            if(ptr->buffer_.write(cache.data(), cache_cur)) cache_cur = 0;
         }
 
         std::this_thread::sleep_for(scan_ms);

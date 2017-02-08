@@ -5,8 +5,7 @@
 #else
 #include <lame/lame.h>
 #endif //_WIN32
-#include "../log.hpp"
-#include <cstring>
+#include "log.hpp"
 
 mp3_format lame_2_header(const mp3data_struct& mp3data);
 

@@ -65,8 +65,8 @@ private:
     bool header_parsed_;
     size_t file_size_;
     size_t frame_size_;
-    ring_buffer<short, int> output_buffer_;
-    ring_buffer<byte, int> input_buffer_;
+    ring_buffer<short, int, false> output_buffer_;
+    ring_buffer<byte, int, false> input_buffer_;
     mp3_format header_;
     std::ifstream file_;
     lame_t lame_;
