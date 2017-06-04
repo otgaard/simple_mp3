@@ -28,6 +28,7 @@ struct audio_context {
 
     stream_t* stream_ptr;
     std::atomic<bool> shutdown;
+    std::atomic<bool> paused;
 
     audio_context() : stream_ptr(nullptr) { }
 };
@@ -56,7 +57,13 @@ int audio_output_callback_s16(const void* input, void* output, u_long frame_coun
     }
 
     static typename context::buffer_t buffer(context_ptr->buffer_size);
-    size_t len = context_ptr->stream_ptr->read(buffer, context_ptr->buffer_size);
+
+    size_t len = 0;
+    if(context_ptr->paused.load(std::memory_order::memory_order_relaxed)) {
+        memset(buffer.data(), 0x00, sizeof(short)*context_ptr->buffer_size);
+        len = context_ptr->buffer_size;
+    } else
+        len = context_ptr->stream_ptr->read(buffer, context_ptr->buffer_size);
 
     if(len == 0 || context_ptr->shutdown) {
         SM_LOG("Complete");
@@ -80,7 +87,13 @@ int audio_output_callback_f32(const void* input, void* output, u_long frame_coun
     }
 
     static typename context::buffer_t buffer(context_ptr->buffer_size);
-    size_t len = context_ptr->stream_ptr->read(buffer, context_ptr->buffer_size);
+
+    size_t len = 0;
+    if(context_ptr->paused.load(std::memory_order::memory_order_relaxed)) {
+        memset(buffer.data(), 0x00, sizeof(float)*context_ptr->buffer_size);
+        len = context_ptr->buffer_size;
+    } else
+        len = context_ptr->stream_ptr->read(buffer, context_ptr->buffer_size);
 
     if(len == 0 || context_ptr->shutdown) {
         SM_LOG("Complete");
@@ -261,6 +274,7 @@ void audio_output<SampleT>::pause() {
     SM_LOG("Pausing audio_output");
 
     audio_state_ = audio_state_ == audio_state::AS_PAUSED ? audio_state::AS_PLAYING : audio_state::AS_PAUSED;
+    s.context.paused.store(is_paused(), std::memory_order_relaxed);
 }
 
 template <typename SampleT>

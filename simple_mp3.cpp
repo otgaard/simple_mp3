@@ -3,11 +3,12 @@
 #include "streams/buffered_stream.hpp"
 #include "streams/adapter_stream.hpp"
 
-const char* const def_filname = "/Users/otgaard/test/another.mp3";
+//const char* const def_filename = "/Users/otgaard/test/another.mp3";
+const char* const def_filename = "/Users/otgaard/Ibiza/des cha cha - live mix.mp3";
 
 int main(int argc, char* argv[]) {
     // Create an MP3 tools stream
-    auto file_stream = std::make_unique<mp3_stream>(argc > 1 ? argv[1] : def_filname, 1024, nullptr);
+    auto file_stream = std::make_unique<mp3_stream>(argc > 1 ? argv[1] : def_filename, 1024, nullptr);
     file_stream->start();
 
     // We have to hook up an adapter if we want to play a signed short sample producer in a floating point audio_output.
@@ -24,8 +25,9 @@ int main(int argc, char* argv[]) {
     audio_output<float> audio_dev(buf_stream.get());
     audio_dev.play();
 
-    while(audio_dev.is_playing()) {
+    while(audio_dev.is_playing() || audio_dev.is_paused()) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
+        audio_dev.pause();
     }
 
     audio_dev.stop();
