@@ -39,7 +39,10 @@ public:
     bool is_open() const { return file_.is_open(); }
     const mp3_format& get_header() const { return header_; }
 
+    const std::string& get_filename() const { return filename_; }
+
     bool start();
+    bool start(const std::string& filename);
 
     virtual size_t read(buffer_t& buffer, size_t len);
     virtual size_t write(const buffer_t& buffer, size_t len);

@@ -45,6 +45,15 @@ bool mp3_stream::start() {
     return true;
 }
 
+
+bool mp3_stream::start(const std::string& filename) {
+    if(file_.is_open()) file_.close();
+    filename_ = filename;
+    input_buffer_.clear();
+    output_buffer_.clear();
+    return start();
+}
+
 size_t mp3_stream::read(buffer_t& buffer, size_t len) {
     if(output_buffer_.size() < len) fill_output_buffer();
     auto l = output_buffer_.read(buffer.data(), len);
@@ -56,6 +65,7 @@ size_t mp3_stream::write(const buffer_t& buffer, size_t len) {
 }
 
 bool mp3_stream::initialise() {
+    if(lame_) return true;
     lame_ = lame_init();
     if(!lame_) {
         SM_LOG("LAME failed to initialise");
